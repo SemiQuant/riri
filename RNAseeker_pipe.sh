@@ -78,6 +78,12 @@ declare_globals () {
         -sd|--script_directory)
         Script_dir="$2"
         ;;
+        -dl|--container)
+        container="$2"
+        ;;
+        -mt|--get_metrics)
+        get_metrics="$2"
+        ;;
     esac
         shift
     done

@@ -1,0 +1,69 @@
+#!/bin/bash
+#$ -cwd
+#$ -l mem_free=16G
+#$ -l h_rt=4:00:00
+#$ -pe smp 8
+#$ -t 1-6
+#$ -N riboSeq_array_test
+
+declare -a samples=("C175_R1_001.fastq.gz" "C210_R1_001.fastq.gz" "C257_R1_001.fastq.gz" "C286_R1_001.fastq.gz" "C349_R1_001.fastq.gz" "C409_R1_001.fastq.gz")
+nm=${samples[$SGE_TASK_ID]}
+nm=${nm/_R1_001.fastq.gz/}"
+echo "Processing $nm"
+
+cd "/wynton/home/ernst/jdlim/riboseq"
+
+# singularity exec /wynton/home/ernst/jdlim/riboseq/riri.sif \
+#   /wynton/home/ernst/jdlim/riboseq/riri/RNAseeker_pipe.sh \
+#     --container
+
+
+singularity exec /wynton/home/ernst/jdlim/riboseq/riri.sif \
+  /wynton/home/ernst/jdlim/riboseq/riri/RNAseeker_pipe.sh \
+    --ref \
+    --threads \
+    --gtf \
+    --read1 \
+    --read2 \
+    --name \
+    --out_dir \
+    --ram \
+    --adapters \
+    --strand \
+    --trim \
+    --trim_min \
+    --keep_unpaired \
+    --remove_rRNA \
+    --script_directory
+
+# singularity exec /wynton/home/ernst/jdlim/riboseq/riri.sif \
+#   /wynton/home/ernst/jdlim/riboseq/riri/RNAseeker_pipe.sh \
+#     --get_metrics "/wynton/home/ernst/jdlim/riboseq/"
+
+
+
+##########################
+
+
+singularity exec /wynton/home/ernst/jdlim/riboseq/riri.sif \
+  /wynton/home/ernst/jdlim/riboseq/riri/riboSee_pipe.sh \
+  --threads \
+  --genome_reference \
+  --GTF_reference \
+  --read_dir \
+  --reads \
+  --out_dir \
+  --name \
+  --strand \
+  --script_directory \
+  --fastQC \
+  --max_missmatch \
+  --min_len \
+  --max_len \
+  --trim_fasta
+
+
+# singularity exec /wynton/home/ernst/jdlim/riboseq/riri.sif \
+#   /wynton/home/ernst/jdlim/riboseq/riri/riboSee_pipe.sh \
+#     --get_metrics "/wynton/home/ernst/jdlim/riboseq/"
+
