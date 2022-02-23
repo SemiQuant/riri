@@ -38,7 +38,6 @@ I have written little to no error handling, so check logs etc.
 | --- | --- | --- |
 | -r|--ref | Full path to reference genome | ${Script\_dir}/references/Mycobacterium\_tuberculosis\_H37Rv\_genome\_v4.fasta |
 | -t|--threads | Number of threads to use |
- |
 | -g|--gtf | Full path to reference annotations | ${Script\_dir}/references/Mycobacterium\_tuberculosis\_H37Rv\_gff\_v4.gff |
 | -r1|--read1 | Full path to loaction of read1 file | NA |
 | -r2|--read2 | Full path to loaction of read2 file | NA |
