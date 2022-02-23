@@ -1,0 +1,31 @@
+h37rv
+PE150
+only use read 1 (PE was cheaper than SE)
+select size btw 24-36
+remove ribosomal rRNA and tRNAs 
+https://mycobrowser.epfl.ch/releases/4/get_file?dir=txt&file=Mycobacterium_tuberculosis_H37Rv.txt
+
+
+
+3' periodicity
+
+
+rnaseq
+PE150
+
+
+
+Samples 6 samples
+
+
+
+the linker sequence for riboseq: CTGTAGGCACCATCAAT
+cDNA kit E7770
+https://www.neb.com/products/e7760-nebnext-ultra-ii-directional-rna-library-prep-kit-for-illumina?gclid=CjwKCAiAsNKQBhAPEiwAB-I5zeHoAfucvW2cJQKhxW67g0-l83kFDI9DmMYJ3DbjlGCFab0PEwMuYhoCkFQQAvD_BwE#Product%20Information
+
+
+
+
+
+
+
