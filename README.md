@@ -6,7 +6,7 @@ info about pipeine here
 I have written little to no error handling, so check logs etc.
 
 ## Download singularity container
-/wynton/home/ernst/jdlim/riboseq/riri/RNAseeker_pipe.sh --container
+./RNAseeker_pipe.sh --container
 
 
 ## RiboSee
