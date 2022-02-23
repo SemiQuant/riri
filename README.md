@@ -35,6 +35,7 @@ I have written little to no error handling, so check logs etc.
 ## RNAseeker
 
 | Flag | Description | Defaults |
+| --- | --- | --- |
 | -r|--ref | Full path to reference genome | ${Script\_dir}/references/Mycobacterium\_tuberculosis\_H37Rv\_genome\_v4.fasta |
 | -t|--threads | Number of threads to use |
  |
