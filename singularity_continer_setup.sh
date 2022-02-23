@@ -81,6 +81,10 @@ mv ./qualimap-build-31-08-20/* /usr/bin/
 
 wget https://github.com/broadinstitute/picard/releases/download/2.26.10/picard.jar
 mv picard.jar /usr/bin/picard.jar
+
+python3 -m pip install cutadapt
+
+
 ##############
 
 #######

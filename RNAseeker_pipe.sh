@@ -1,7 +1,3 @@
-
-
-
-
 #!/bin/bash
 usage () { #echo -e to read \n
   echo "
@@ -13,51 +9,21 @@ Usage Options
     -mt|--get_metrics = supply a dir and get metrics for all analyses in that dir, all other options will be ignored if this is non-empyt
   
   Mode 3: 
-    
-    -g1|--genome_reference1 = path to genome reference 1, if only a assembly accession is supplied the file will be downloaded from ncbi
-    -g2|--genome_reference2 (optional) = path to genome reference 2, if only a assembly accession is supplied the file will be downloaded from ncbi
-    -g1|--genome_reference1
-    -g2|--genome_reference2
-
-    -gtf2|--GTF_reference2
-    -t1|--Type_1 = E for eukaryotic or B forbacterial
-    -t2|--Type_2 = E for eukaryotic or B forbacterial
-    -r|--ram
-    -rd|--read_dir
- - else leave blank
-    -o|--out_dir
+    -r|--ref = genome fasta
+    -t|--threads
+    -g|--gtf = gtf file
+    -r1|--read1
+    -r2|--read2 = the second fastq file if PE reads
     -n|--name
-    -m|--miRNA = Is this miRNA?
-    -c|--cufflinks = Run cufflinks?
-    -f|--feat_count = Run subread feature count?
-    -q|--qualimap = Run qualimap?
-    -v|--variant_calling = Perform variant callineg?
-    -s|--strand = stranded library (yes|no|reverse)
+    -o|--out_dir
+    -m|--ram
+    -a|--adapters multifasta of adapters to clip
+    -s|--strand stranded library (yes|no|reverse)
     -tr|--trim = trim reads?
+    -tm|--trim_min (if trim flag selected)
+    -k|--keep_unpaired (if trim flag selected)
+    -rR|--remove_rRNA = remove rRNA from annotation file
     -sd|--script_directory
-    -fq|--fastQC = run fastqc?
-    -sr|--shotRead = is read length short (like 50nt)?
-    -sL|--SRlength = for making the index, if shotRead is on then this defult is 50
-    -rR|--remove_rRNA = remove rRNA from annotation file (not very robus, just deletes lines that say rRNA or ribosomal RNA), provide which GTF given it is (g1 or g2 or both)
-    -rRm|--remove_rRNAmtb = remove rRNA from H37Rv annotation file, provide which GTF given it is (g1 or g2)
-    -k|--keep_unpaired = Y|N
-    -c2|--only_care = do you onlu care about genome 2?
-    -mM|--multipleMet = picard multimet and rRNA met
-    -s2|--star2 = basic 2 pass mode on star aligner?
-  
-
--r|--ref = genome fasta
--t|--threads
--g|--gtf = gtf file
--r1|--read1
--r2|--read2 = the second fastq file if PE reads
--n|--name
--o|--out_dir
--m|--ram
--a|--adapters multifasta of adapters to clip
--s|--strand stranded library (yes|no|reverse)
--tm|--trim_min
-    
   "
 }
 
@@ -106,6 +72,12 @@ declare_globals () {
         # -tm|--trim_min)
         # trim_min="$2"
         # ;;
+        -rR|--remove_rRNA)
+        rRNA="Y"
+        ;;
+        -sd|--script_directory)
+        Script_dir="$2"
+        ;;
     esac
         shift
     done
@@ -163,7 +135,6 @@ qc_trim_PE () {
               "${2/.f*/_reverse_paired.fq.gz}" "${2/.f*/_reverse_unpaired.fq.gz}" \
               ILLUMINACLIP:"$6":2:30:10 LEADING:2 TRAILING:2 SLIDINGWINDOW:4:10 MINLEN:$7
         
-
             # mv "${1/.f*/_forward.fq.gz}" "${2/.f*/_reverse.fq.gz}" "$3"
             mv "${1/.f*/_forward_paired.fq.gz}" "$read1"
             mv "${2/.f*/_reverse_paired.fq.gz}" "$read2"
@@ -245,7 +216,7 @@ BOWTIE_alignerPE () {
 
     export read1_unaligned="${4}/${5}_${gen}_Unmapped.out.mate1.fastq.gz" 
     export read2_unaligned="${4}/${5}_${gen}_Unmapped.out.mate2.fastq.gz"
-       
+
     mv "un-conc-mate.1" "$read1_unaligned" 
     mv "un-conc-mate.2" "$read2_unaligned"
     
@@ -260,7 +231,6 @@ BOWTIE_alignerPE () {
     fi
     echo "BOWTIE alignment completed"
 }
-
 
 
 
@@ -290,7 +260,7 @@ do_calcs () {
 
 
 
- echo "Started htseq-count $(basename $2)"
+    echo "Started htseq-count $(basename $2)"
         htseq-count --type "gene" --idattr "Name" --order "name" --mode "union" --stranded "$strand" -a 5 --nonunique all -f bam "$3" "$4" > "${3/bam/HTSeq.counts}" #
         
         # or gene? - let user input type to count
@@ -350,11 +320,10 @@ Multi_met_pic () {
         O="${4}_multiple_metrics" \
         R="$5"
       
-      
+
     local gen=$(basename $1)
     local gen=${gen/.g*/}
     local gtf_1"=$1"
-    
     
     
     if [[ ! -e "${gtf_1%.*}.rRNA.gtf" ]]
@@ -419,14 +388,6 @@ Multi_met_pic () {
 
     rm "${3/bam/coord.bam}"
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -501,22 +462,26 @@ if [ ! -f "$PICARD" ]; then echo "$PICARD not found!"; exit 1; fi
 # create index
 BOWTIE_index "$ref" "$threads" "$gt"
 
-qc_trim_PE "$read1" "$read2" "$out_dir" $ram $threads "$adapterPE" $trim_min
-
-
 # remove rRNA
 if [[ -v $rRNA ]]
 then
-  sed '/rRNA/d;/ribosomal RNA/d;/ribosomal/d' "$gt" > "$gt_no_rRNA"
+  # sed '/rRNA/d;/ribosomal RNA/d;/ribosomal/d' "$gt" > "$gt_no_rRNA"
+  awk '{if ($3 != "rRNA") print $0;}' "$gtf" > "$gt_no_rRNA"
   export gt="$gt_no_rRNA"
 fi
 
-#alignments
+
+# trim
+if [[ $(basename $read2) == "none" ]]
+    qc_trim_PE "$read1" "$read2" "$out_dir" $ram $threads "$adapters" $trim_min
+fi
+
+
+# alignments
 read_length=$(zcat $read1 | head -n 10000 | awk '{if(NR%4==2) print length($1)}' | awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }')
 
 BOWTIE_alignerPE "$read1" $threads "$ref" "$out_dir" "$name" $ram "$read2"
 bam_file="${out_dir}/${name}.$(printf $(basename $ref) | cut -f 1 -d '.').bam"
-
 do_calcs $out_dir $ref $bam_file $gt $threads $strand $read_length
 Multi_met_pic "$gt" $threads "$bam_file" "$name" "$ref" "$strand"
 
