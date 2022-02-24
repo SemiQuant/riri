@@ -224,11 +224,11 @@ fi
 # Fastqc
 if [[ ! -e "${reads/.f*/_fastqc.zip}" ]] && [[ ! -z $fastQC ]]
 then
-  fastqc -t $threads "$reads" -o "${out_dir}"
+  fastqc -t $threads "$reads" -o "$out_dir"
 fi
 
 # trim reads
-qc_trim_SE $threads "$reads" "$trim_fasta" "$min_len" "${out_dir}"
+qc_trim_SE $threads "$reads" "$trim_fasta" "$min_len" "$out_dir"
 
 # align reads
 bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -a -v $max_missmatch \
@@ -240,21 +240,21 @@ bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -a -v $max_missm
 # samtools flagstat "${nme}_rRNA.bam"
 
 reads="${reads}_cleaned.fq"
-bowtie --threads $threads -S --seed 1987 -x "$ref" -q "$reads" -a -v $max_missmatch "$out_dir/${nme}.sam"
-samtools view -bS "$out_dir/${nme}.sam" | samtools sort -@ $threads -O "bam" -T "working" -o "$out_dir/${nme}.bam"
-samtools index "$out_dir/${nme}.bam"
-rm "$out_dir/${nme}.sam"
-samtools flagstat "$out_dir/${nme}.bam"
+bowtie --threads $threads -S --seed 1987 -x "$ref" -q "$reads" -a -v $max_missmatch "${out_dir}/${nme}.sam"
+samtools view -bS "${out_dir}/${nme}.sam" | samtools sort -@ $threads -O "bam" -T "working" -o "${out_dir}/${nme}.bam"
+samtools index "${out_dir}/${nme}.bam"
+rm "${out_dir}/${nme}.sam"
+samtools flagstat "${out_dir}/${nme}.bam"
 
 
 # count alignments
 echo "HtSeq started"
 htseq-count --nprocesses $threads --type "gene" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
-  --minaqual 10 --nonunique none -f bam "$out_dir/${nme}.bam" "$gtf" --counts_output "$out_dir/${nme/.bam/_HTSeq.counts.tsv}"
+  --minaqual 10 --nonunique none -f bam "${out_dir}/${nme}.bam" "$gtf" --counts_output "${out_dir}/${nme/.bam/_HTSeq.counts.tsv}"
 # featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "gene" -g "Name" -O -Q 5 --ignoreDup -T $5 -a "$4" "$fCount" -o "${3/.bam/.featCount.counts}" "$3"
 
 htseq-count --nprocesses $threads --type "CDS" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
-  --minaqual 10 --nonunique none -f bam "$out_dir/${nme}.bam" "$gtf" --counts_output "$out_dir/${nme/.bam/_HTSeq.CDS.counts.tsv}"
+  --minaqual 10 --nonunique none -f bam "${out_dir}/${nme}.bam" "$gtf" --counts_output "${out_dir}/${nme/.bam/_HTSeq.CDS.counts.tsv}"
 
 
 # 5′ mapped sites of RPFs
@@ -263,7 +263,7 @@ psite "${ref/.f*/_rois.txt}" "${nme}_riboprofile" \
   --min_length $min_len \
   --max_length $max_len \
   --require_upstream \
-  --count_files "$out_dir/${nme}.bam"
+  --count_files "${out_dir}/${nme}.bam"
 
 ##############        
 
