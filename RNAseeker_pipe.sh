@@ -88,6 +88,9 @@ declare_globals () {
         -tr|--trim)
         trim="Y"
         ;;
+        -fq|--fastQC)
+        fastQC="Y"
+        ;;
     esac
         shift
     done
