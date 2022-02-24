@@ -40,3 +40,10 @@ fastQC="Y"
 
 
 
+
+cd "/wynton/home/ernst/jdlim/riboseq/"
+git clone --recursive https://github.com/SemiQuant/riri.git
+singularity pull library://semiquant/default/riri:v0.1
+
+singularity shell /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif 
+

@@ -28,7 +28,7 @@ singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
     --name ${nm} \
     --out_dir "/wynton/home/ernst/jdlim/riboseq" \
     --adapters "/wynton/home/ernst/jdlim/riboseq/riri/references/adapts.fasta" \
-    --strand "yes" \
+    --strand "reverse" \
     --trim \
     --remove_rRNA \
     --fastQC \
@@ -53,7 +53,7 @@ singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
   --reads "/wynton/home/ernst/jdlim/riboseq/fastq/${nm}_R1.fq.gz" \
   --out_dir "/wynton/home/ernst/jdlim/riboseq" \
   --name "$nm" \
-  --strand "yes" \
+  --strand "reverse" \
   --script_directory "/wynton/home/ernst/jdlim/riboseq/riri" \
   --fastQC \
   --max_missmatch 2 \
