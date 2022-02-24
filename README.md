@@ -1,7 +1,7 @@
 # riri
 
 ## Pipelines to process bacterial PE RNAseq and SE RiboSeq
-info about pipeine here
+IInfo about pipeines will go here
 
 I have written little to no error handling, so check logs etc.
 

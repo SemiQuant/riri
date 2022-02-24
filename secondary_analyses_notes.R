@@ -30,4 +30,4 @@ devtools::install_github("LabTranslationalArchitectomics/riboWaltz", dependencie
 - https://pubmed.ncbi.nlm.nih.gov/19213877/#&gid=article-figures&pid=fig-4-uid-3
 
 
-## Read in processed data and check/clean
+## Read in processed data and metadata, and check/clean
