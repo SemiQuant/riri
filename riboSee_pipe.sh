@@ -100,15 +100,17 @@ fi
 ###############
 ## Functions ##
 qc_trim_SE () {
-  out_fq="${2/.f*/.trimmed.fq.gz}"
-  out_fq="$(basename $out_fq)"
-  out_fq="${5}/${out_fq}"
-    java -jar "$TRIM" SE \
-      -threads $1 \
-      "$2" \
-      "$out_fq" \
-      ILLUMINACLIP:"$3":2:30:10 LEADING:2 TRAILING:2 SLIDINGWINDOW:3:10 MINLEN:$4
+    echo "Started trimming"
+    out_fq="${2/.f*/.trimmed.fq.gz}"
+    out_fq="$(basename $out_fq)"
+    out_fq="${5}/${out_fq}"
+      java -jar "$TRIM" SE \
+        -threads $1 \
+        "$2" \
+        "$out_fq" \
+        ILLUMINACLIP:"$3":2:30:10 LEADING:2 TRAILING:2 SLIDINGWINDOW:3:10 MINLEN:$4
 
+    echo "FastQC post trimming"
     #FastQC post
     if  [[ ! -z $fastQC ]]
     then
