@@ -6,11 +6,12 @@ apt install -y zlib1g-dev libssl-dev
 apt-get install -y libcurl4-openssl-dev libncurses-dev libbz2-dev liblzma-dev r-base-core libxml2-dev libcurl4-openssl-dev curl bc openjdk-8-jdk zip wget git
 
 
-wget -O fastqc.zip https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
+wget -O fastqc.zip http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
 unzip fastqc.zip
 cd ./FastQC
-chmod 755 fastqc
-mv fastqc /usr/local/bin/fastqc
+mv * /usr/local/bin/
+chmod 757 /usr/local/bin/fastqc
+# ln -s ${PWD}/fastqc /usr/bin/fastqc
 cd
 
 

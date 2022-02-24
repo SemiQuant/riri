@@ -32,6 +32,7 @@ singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
     --trim \
     --remove_rRNA \
     --fastQC \
+    --keep_unpaired \
     --script_directory "/wynton/home/ernst/jdlim/riboseq/riri" \
 
 

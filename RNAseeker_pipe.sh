@@ -158,11 +158,11 @@ qc_trim_PE () {
                 cat "${1/.f*/_forward_unpaired.fq.gz}" >> "$read1"
                 cat "${2/.f*/_reverse_unpaired.fq.gz}" >> "$read2"
                 
-                # just to make sure as sometimes it lets one through if merging the paired and unpaired
-                cutadapt --cores=$5 --quality-cutoff 10,10 --minimum-length $7 -o "${read1}.tmp.gz" "$read1"
-                mv "${read1}.tmp.gz" "$read1"
-                cutadapt --cores=$5  --quality-cutoff 10,10 --minimum-length $7 -o "${read2}.tmp.gz" "$read2"
-                mv "${read2}.tmp.gz" "$read2"
+                # # just to make sure as sometimes it lets one through if merging the paired and unpaired
+                # cutadapt --cores=$5 --quality-cutoff 10,10 --minimum-length $7 -o "${read1}.tmp.gz" "$read1"
+                # mv "${read1}.tmp.gz" "$read1"
+                # cutadapt --cores=$5  --quality-cutoff 10,10 --minimum-length $7 -o "${read2}.tmp.gz" "$read2"
+                # mv "${read2}.tmp.gz" "$read2"
             fi
             
             mv "${1/.f*/_forward_unpaired.fq.gz}" "${2/.f*/_reverse_unpaired.fq.gz}" "${3}"
@@ -463,7 +463,7 @@ command -v bcftools >/dev/null 2>&1 || { echo >&2 "I require bcftools but it's n
 command -v fastqc >/dev/null 2>&1 || { echo >&2 "I require fastqc but it's not installed. Aborting."; exit 1; }
 command -v samtools >/dev/null 2>&1 || { echo >&2 "I require samtools but it's not installed. Aborting."; exit 1; }
 command -v htseq-count >/dev/null 2>&1 || { echo >&2 "I require htseq but it's not installed. Aborting."; exit 1; }
-command -v python >/dev/null 2>&1 || { echo >&2 "I require python2 but it's not installed. Aborting."; exit 1; }
+command -v python2 >/dev/null 2>&1 || { echo >&2 "I require python2 but it's not installed. Aborting."; exit 1; }
 command -v featureCounts >/dev/null 2>&1 || { echo >&2 "I require featureCounts but it's not installed. Aborting."; exit 1; }
 command -v bowtie2 >/dev/null 2>&1 || { echo >&2 "I require bowtie2 but it's not installed. Aborting."; exit 1; }
 if [ ! -z $cut_adapt  ]; then command -v cutadapt >/dev/null 2>&1 || { echo >&2 "I require cutadapt but it's not installed. Aborting."; exit 1; }; fi

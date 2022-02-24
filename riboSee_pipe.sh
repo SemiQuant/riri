@@ -100,10 +100,12 @@ fi
 ###############
 ## Functions ##
 qc_trim_SE () {
+  out_fq="${2/.f*/.trimmed.fq.gz}"
+  out_fq="$(basename $out_fq)"
     java -jar "$TRIM" SE \
       -threads $1 \
       "$2" \
-      "${2/.f*/.trimmed.fq.gz}" \
+      "$out_fq" \
       ILLUMINACLIP:"$3":2:30:10 LEADING:2 TRAILING:2 SLIDINGWINDOW:3:10 MINLEN:$4
 
     #FastQC post
@@ -112,7 +114,7 @@ qc_trim_SE () {
       fastqc -t $1 "${2/.f*/.trimmed.fq.gz}" -o ./
     fi
 
-    reads="${2/.f*/.trimmed.fq.gz}"
+    reads="$out_fq"
     export reads
 }
 
@@ -200,7 +202,7 @@ if [[ "${gtf##*.}" == "gff" ]]
 then
   if [ -e "${gtf/.gff/.gtf}" ]
   then
-    local gtf="${gtf/.gff/.gtf}"
+    gtf="${gtf/.gff/.gtf}"
   else
     gffread "$gtf" -T -o "${gtf/.gff/_tmp.gtf}"
     gtf="${gtf/.gff/_tmp.gtf}"
@@ -223,7 +225,7 @@ then
 fi
 
 # trim reads
-qc_trim_SE $threads "$reads" "$trim_fasta" "$min_len"
+qc_trim_SE $threads "$reads" "$trim_fasta" "$min_len" 
 
 # align reads
 bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -a -v $max_missmatch \
