@@ -102,6 +102,7 @@ fi
 qc_trim_SE () {
   out_fq="${2/.f*/.trimmed.fq.gz}"
   out_fq="$(basename $out_fq)"
+  out_fq="${5}/${out_fq}"
     java -jar "$TRIM" SE \
       -threads $1 \
       "$2" \
@@ -111,7 +112,7 @@ qc_trim_SE () {
     #FastQC post
     if  [[ ! -z $fastQC ]]
     then
-      fastqc -t $1 "${2/.f*/.trimmed.fq.gz}" -o ./
+      fastqc -t $1 "${2/.f*/.trimmed.fq.gz}" -o "${5}/"
     fi
 
     reads="$out_fq"
@@ -143,6 +144,7 @@ fi
 # Set defults
 Script_dir_tmp="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 Script_dir="${Script_dir:-$Script_dir_tmp}"
+threads="${threads:-4}"
 ram=$(expr $threads \* 2)
 jav_ram=$(echo "scale=2; $ram*0.8" | bc)
 export _JAVA_OPTIONS=-Xmx"${jav_ram%.*}G"
@@ -225,7 +227,7 @@ then
 fi
 
 # trim reads
-qc_trim_SE $threads "$reads" "$trim_fasta" "$min_len" 
+qc_trim_SE $threads "$reads" "$trim_fasta" "$min_len" "$out_dir"
 
 # align reads
 bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -a -v $max_missmatch \
