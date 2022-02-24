@@ -14,16 +14,17 @@ Usage Options
     -g|--gtf = gtf file
     -r1|--read1
     -r2|--read2 = the second fastq file if PE reads
-    -n|--name
+    -n|--name = output name
     -o|--out_dir
     -m|--ram
     -a|--adapters multifasta of adapters to clip
     -s|--strand stranded library (yes|no|reverse)
     -tr|--trim = trim reads?
-    -tm|--trim_min (if trim flag selected)
+    # -tm|--trim_min (if trim flag selected)
     -k|--keep_unpaired (if trim flag selected)
     -rR|--remove_rRNA = remove rRNA from annotation file
     -sd|--script_directory
+    -fq|--fastQC = run fastqc?
   "
 }
 
@@ -83,6 +84,9 @@ declare_globals () {
         ;;
         -mt|--get_metrics)
         get_metrics="$2"
+        ;;
+        -tr|--trim)
+        trim="Y"
         ;;
     esac
         shift
@@ -257,10 +261,7 @@ do_calcs () {
     fi
     
     
-    if [[ $read2 != "none" ]]
-    then
-        fCount='-p' #this sets it to PE
-    fi
+    fCount='-p' #this sets it to PE
     
     samtools flagstat "$3" > "${3/.bam/_flagstat.txt}"
 
@@ -408,7 +409,7 @@ declare_globals "$@"
 if [[ ! -z $container ]]
 then
     cd $container
-    singularity pull library://semiquant/default/riri
+    singularity pull library://semiquant/default/riri:v0.1
     exit 0
 fi
 
@@ -429,6 +430,13 @@ jav_ram=$(echo "scale=2; $ram*0.8" | bc)
 export _JAVA_OPTIONS=-Xmx"${jav_ram%.*}G"
 strand="${strand:-no}"
 trim_min=16
+
+trim_tmp="${Script_dir}/references/adapts.fasta"
+trim_fasta="${trim_fasta:-trim_tmp}"
+ref_tmp="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_genome_v4.fasta"
+ref="${ref:-ref_tmp}"
+gtf_tmp="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_gff_v4.gff"
+gtf="${gtf:-gtf_tmp}"
 
 
 # PATHs in singularity container
@@ -469,17 +477,18 @@ if [ ! -f "$PICARD" ]; then echo "$PICARD not found!"; exit 1; fi
 BOWTIE_index "$ref" "$threads" "$gt"
 
 # remove rRNA
-if [[ -v $rRNA ]]
+if [[ ! -v $rRNA ]]
 then
   # sed '/rRNA/d;/ribosomal RNA/d;/ribosomal/d' "$gt" > "$gt_no_rRNA"
-  awk '{if ($3 != "rRNA") print $0;}' "$gtf" > "$gt_no_rRNA"
-  export gt="$gt_no_rRNA"
+  awk '{if ($3 != "rRNA") print $0;}' "$gt" > "${gt}_no_rRNA"
+  export gt="${gt}_no_rRNA"
 fi
 
 
 # trim
-if [[ $(basename $read2) == "none" ]]
-    qc_trim_PE "$read1" "$read2" "$out_dir" $ram $threads "$adapters" $trim_min
+if [[ -f $adapters ]]
+then
+  qc_trim_PE "$read1" "$read2" "$out_dir" $ram $threads "$adapters" $trim_min
 fi
 
 

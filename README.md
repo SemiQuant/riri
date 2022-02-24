@@ -44,10 +44,11 @@ I have written little to no error handling, so check logs etc.
 | -n|--name | Sample name | NA |
 | -o|--out\_dir | Full path to output directory | NA |
 | -m|--ram | Ram | 2\*threads |
-| -a|--adapters | Path to adapter and linkers multi fasta | ${Script\_dir}/references/adapts.fasta |
 | -s|--strand | Stranded sequecning (yes|no|reverse) | no |
 | -rR|--remove\_rRNA | Remove rRNA from annotation file | NA |
 | -sd|--script\_directory | Path to script location | $(dirname &quot;$0&quot;) |
 | -dl|--container | Downloaad singularity container and exit | NA |
 | -mt|--get\_metrics | Compile report of metric after run, path to folder of results | NA |
-
+| -tr|--trim\_metrics | trim reads? | NA |
+| -a|--adapters | Path to adapter and linkers multi fasta | ${Script\_dir}/references/adapts.fasta |
+| -fq|--fastQC | Perform fastQC anlsysis | NA |

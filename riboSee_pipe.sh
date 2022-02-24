@@ -18,7 +18,7 @@ usage () {
     -rd|--read_dir
     -r1|--read2 = the fastq file
     -o|--out_dir
-    -n|--nme output name
+    -n|--name = output name
     -s|--strand = stranded library (yes|no|reverse)
     -sd|--script_directory
     -fq|--fastQC = run fastqc?
@@ -128,7 +128,7 @@ TRIM=/usr/bin/Trimmomatic-0.39/trimmomatic-0.39.jar
 if [[ ! -z $container ]]
 then
     cd $container
-    singularity pull library://semiquant/default/riri
+    singularity pull library://semiquant/default/riri:v0.1
     exit 0
 fi
 

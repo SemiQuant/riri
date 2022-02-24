@@ -9,6 +9,12 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r packages, include=FALSE, eval=FALSE}
+install.packages(c("plotly", "tidyverse", "BiocManager", "DESeq2", "parallel", "xtail", "devtools"))
+BiocManager::install(c("riboSeqR", "systemPipeR"))
+devtools::install_github("LabTranslationalArchitectomics/riboWaltz", dependencies = TRUE)
+```
+
 ## Inspiration
 
 - https://bioconductor.org/packages/release/bioc/html/riboSeqR.html
