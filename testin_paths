@@ -1,10 +1,10 @@
-Script_dir=
+Script_dir="/wynton/home/ernst/jdlim/riboseq/riri"
 
 
 
 threads="1"
-ref="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_genome_v4.fasta"
-gtf="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_gff_v4.gff"
+ref="${Script_dir}/references/NC_000962.fasta"
+gtf="${Script_dir}/references/NC_000962.gff"
 
 read_dir="/wynton/home/ernst/jdlim/riboseq/fastq"
 reads="$2"
@@ -22,22 +22,21 @@ trim_fasta="${Script_dir}/references/adapts.fasta"
 
 
 ############################
-Script_dir=
-
-
-
+Script_dir="/wynton/home/ernst/jdlim/riboseq/riri"
 threads="1"
-ref="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_genome_v4.fasta"
-gt="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_gff_v4.gff"
-
-read1="$2"
-read2="$2"
-
+ref="${Script_dir}/references/NC_000962.fasta"
+gt="${Script_dir}/references/NC_000962.gff"
 name="test_rnaseq"
 out_dir="/wynton/home/ernst/jdlim/riboseq"
 adapters="${Script_dir}/references/adapts.fasta"
 strand="yes"
 rRNA="Y"
+read1="/wynton/home/ernst/jdlim/riboseq/riri/rnaseq_test/NC_1_R1.fq.gz"
+read2="/wynton/home/ernst/jdlim/riboseq/riri/rnaseq_test/NC_1_R2.fq.gz"
+trim="Y"
+fastQC="Y"
+
+/wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif
 
 
 

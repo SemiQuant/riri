@@ -230,11 +230,14 @@ BOWTIE_alignerPE () {
     mv "un-conc-mate.1" "$read1_unaligned" 
     mv "un-conc-mate.2" "$read2_unaligned"
     
-    java -jar "$PICARD" SortSam \
-      I="$out_f" \
-      O="$out_f_bam"\
-      SORT_ORDER=queryname \
-      VALIDATION_STRINGENCY=LENIENT
+    # java -jar "$PICARD" SortSam \
+    #   I="$out_f" \
+    #   O="$out_f_bam"\
+    #   SORT_ORDER=queryname \
+    #   VALIDATION_STRINGENCY=LENIENT
+
+    samtools view -bS "$out_f" | samtools sort -@ $thread -O "bam" -T "working" -o "$out_f_bam"
+    samtools index "$out_f_bam"
 
     rm "$out_f"
     
@@ -268,14 +271,14 @@ do_calcs () {
 
 
     echo "Started htseq-count $(basename $2)"
-        htseq-count --type "gene" --idattr "Name" --order "name" --mode "union" --stranded "$strand" -a 5 --nonunique all -f bam "$3" "$4" > "${3/bam/HTSeq.counts}" #
-        
-        # or gene? - let user input type to count
-        if [[ ! -z $feat ]]
-        then
-            echo "Started featureCounts $(basename $2)"
-            featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "gene" -g "Name" -O -Q 5 --ignoreDup -T $5 -a "$4" "$fCount" -o "${3/.bam/.featCount.counts}" "$3"
-        fi
+    htseq-count --type "gene" --idattr "Name" --order "name" --mode "union" --stranded "$strand" -a 5 --nonunique all -f bam "$3" "$4" > "${3/bam/HTSeq.counts}" #
+
+    # or gene? - let user input type to count
+    if [[ ! -z $feat ]]
+    then
+        echo "Started featureCounts $(basename $2)"
+        featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "gene" -g "Name" -O -Q 5 --ignoreDup -T $5 -a "$4" "$fCount" -o "${3/.bam/.featCount.counts}" "$3"
+    fi
 
     echo "Counts completed"
     
@@ -288,8 +291,13 @@ do_calcs () {
         gtf="$4"
         if [[ "${gtf##*.}" == "gff" ]]
         then
-            gffread "$gtf" -T -o "${gtf/.gff/_tmp.gtf}"
-            local gtf="${gtf/.gff/_tmp.gtf}"
+            if [ -e "${gtf/.gff/.gtf}" ]
+            then
+                local gtf="${gtf/.gff/.gtf}"
+            else
+                gffread "$gtf" -T -o "${gtf/.gff/_tmp.gtf}"
+                local gtf="${gtf/.gff/_tmp.gtf}"
+            fi
         fi
             # samtools sort -n -@ $5 -o "${3/bam/coord.bam}" "$3"
             # --sorted is giving issues.. have to let it do it? this take much more time
@@ -316,14 +324,8 @@ Multi_met_pic () {
     # $5 ref
     # $6 strand
     
-    #PICARD requires coordinate sorted bam file
-    if [[ ! -e "${3/bam/coord.bam}" ]]
-    then
-        samtools sort -@ $2 -o "${3/bam/coord.bam}" "$3"
-    fi
-    
     java -jar "$PICARD" CollectMultipleMetrics \
-        I="${3/bam/coord.bam}" \
+        I="$3" \
         O="${4}_multiple_metrics" \
         R="$5"
       
@@ -361,7 +363,7 @@ Multi_met_pic () {
     
     
     # Intervals for rRNA transcripts.
-    samtools view -H "$bam" > "${4}_rRNA.intervalListBody.txt"
+    samtools view -H "$3" > "${4}_rRNA.intervalListBody.txt"
 
     cat ${gtf_1%.*}.rRNA.gtf | awk '$3 == "transcript"' | \
       cut -f1,4,5,7,9 | \
@@ -385,7 +387,7 @@ Multi_met_pic () {
     
         
     java -jar "$PICARD" CollectRnaSeqMetrics \
-        I="${3/bam/coord.bam}" \
+        I="$3" \
         O="${4}_RNA_Metrics" \
         REF_FLAT="${gtf_1%.*}.all.refFlat.txt" \
         STRAND_SPECIFICITY="$strandP" \
@@ -393,7 +395,6 @@ Multi_met_pic () {
         CHART_OUTPUT="${4}.pdf"
         #ASSUME_SORTED=FALSE
 
-    rm "${3/bam/coord.bam}"
 }
 
 
@@ -433,9 +434,9 @@ trim_min=16
 
 trim_tmp="${Script_dir}/references/adapts.fasta"
 trim_fasta="${trim_fasta:-trim_tmp}"
-ref_tmp="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_genome_v4.fasta"
+ref_tmp="${Script_dir}/references/NC_000962.fasta"
 ref="${ref:-ref_tmp}"
-gtf_tmp="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_gff_v4.gff"
+gtf_tmp="${Script_dir}/references/NC_000962.gff"
 gtf="${gtf:-gtf_tmp}"
 
 
@@ -497,6 +498,8 @@ read_length=$(zcat $read1 | head -n 10000 | awk '{if(NR%4==2) print length($1)}'
 
 BOWTIE_alignerPE "$read1" $threads "$ref" "$out_dir" "$name" $ram "$read2"
 bam_file="${out_dir}/${name}.$(printf $(basename $ref) | cut -f 1 -d '.').bam"
+feat="Y"
+qualimap="Y"
 do_calcs $out_dir $ref $bam_file $gt $threads $strand $read_length
 Multi_met_pic "$gt" $threads "$bam_file" "$name" "$ref" "$strand"
 

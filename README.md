@@ -14,8 +14,8 @@ I have written little to no error handling, so check logs etc.
 | Flag | Description | Defaults |
 | --- | --- | --- |
 | -t|--threads | Number of threads to use | NA |
-| -g|--genome\_reference | Full path to reference genome | ${Script\_dir}/references/Mycobacterium\_tuberculosis\_H37Rv\_genome\_v4.fasta |
-| -gtf|--GTF\_reference | Full path to reference annotations | ${Script\_dir}/references/Mycobacterium\_tuberculosis\_H37Rv\_gff\_v4.gff |
+| -g|--genome\_reference | Full path to reference genome | ${Script\_dir}/references/NC_000962.fasta |
+| -gtf|--GTF\_reference | Full path to reference annotations | ${Script\_dir}/references/NC_000962.gff |
 | -rd|--read\_dir | Full path to loaction of read file | NA |
 | -r|--reads | Read name | NA |
 | -o|--out\_dir | Full path to output directory | NA |
@@ -36,9 +36,9 @@ I have written little to no error handling, so check logs etc.
 
 | Flag | Description | Defaults |
 | --- | --- | --- |
-| -r|--ref | Full path to reference genome | ${Script\_dir}/references/Mycobacterium\_tuberculosis\_H37Rv\_genome\_v4.fasta |
+| -r|--ref | Full path to reference genome | ${Script\_dir}/references/NC_000962.fasta |
 | -t|--threads | Number of threads to use |
-| -g|--gtf | Full path to reference annotations | ${Script\_dir}/references/Mycobacterium\_tuberculosis\_H37Rv\_gff\_v4.gff |
+| -g|--gtf | Full path to reference annotations | ${Script\_dir}/references/NC_000962.gff |
 | -r1|--read1 | Full path to loaction of read1 file | NA |
 | -r2|--read2 | Full path to loaction of read2 file | NA |
 | -n|--name | Sample name | NA |

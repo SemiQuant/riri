@@ -3,14 +3,14 @@ sudo singularity shell --writable riri
 
 apt-get update && apt-get install -y build-essential
 apt install -y zlib1g-dev libssl-dev
-apt-get install -y libcurl4-openssl-dev libncurses-dev libbz2-dev liblzma-dev r-base-core libxml2-dev libcurl4-openssl-dev curl bc openjdk-8-jdk zip wget
+apt-get install -y libcurl4-openssl-dev libncurses-dev libbz2-dev liblzma-dev r-base-core libxml2-dev libcurl4-openssl-dev curl bc openjdk-8-jdk zip wget git
 
 
 wget -O fastqc.zip https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
 unzip fastqc.zip
 cd ./FastQC
 chmod 755 fastqc
-ln -s ${PWD}/fastqc /usr/bin/fastqc
+mv fastqc /usr/local/bin/fastqc
 cd
 
 
@@ -47,6 +47,7 @@ wget -O subread.tar.gz https://sourceforge.net/projects/subread/files/subread-2.
 tar -xzf subread.tar.gz
 rm subread.tar.gz
 mv subread-2.0.3-Linux-x86_64 /usr/bin/subread
+ln -s /usr/bin/subread/bin/featureCounts /usr/local/bin/featureCounts
 
 apt-get install -y python2 python3
 apt-get -y install python3-pip
@@ -84,6 +85,22 @@ mv picard.jar /usr/bin/picard.jar
 
 python3 -m pip install cutadapt
 
+chmod 757 /usr/bin/
+
+git clone https://github.com/gpertea/gffread
+cd gffread
+make release
+ln -s ${PWD}/gffread/gffread /usr/bin/gffread
+chmod 757 /usr/bin/gffread
+cp ${PWD}/gffread/gffread /usr/local/bin/gffread
+
+pip install HTSeq
+
+wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/gtfToGenePred
+mv gtfToGenePred /usr/bin/gtfToGenePred
+chmod 757 /usr/bin/gtfToGenePred
+
+pip install Biopython==1.77
 
 ##############
 

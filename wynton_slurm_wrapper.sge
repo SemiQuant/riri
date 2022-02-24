@@ -20,9 +20,9 @@ cd "/wynton/home/ernst/jdlim/riboseq"
 
 singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
   /wynton/home/ernst/jdlim/riboseq/riri/RNAseeker_pipe.sh \
-    --ref "/wynton/home/ernst/jdlim/riboseq/riri/references/Mycobacterium_tuberculosis_H37Rv_genome_v4.fasta" \
+    --ref "/wynton/home/ernst/jdlim/riboseq/riri/references/NC_000962.fasta" \
     --threads 8 \
-    --gtf "/wynton/home/ernst/jdlim/riboseq/riri/references/Mycobacterium_tuberculosis_H37Rv_gff_v4.gff" \
+    --gtf "/wynton/home/ernst/jdlim/riboseq/riri/references/NC_000962.gff" \
     --read1 "/wynton/home/ernst/jdlim/riboseq/riri/rnaseq_test/${nm}_R1.fq.gz" \
     --read2 "/wynton/home/ernst/jdlim/riboseq/riri/rnaseq_test/${nm}_R2.fq.gz" \
     --name ${nm} \
@@ -30,12 +30,12 @@ singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
     --adapters "/wynton/home/ernst/jdlim/riboseq/riri/references/adapts.fasta" \
     --strand "yes" \
     --trim \
-    --keep_unpaired \
     --remove_rRNA \
+    --fastQC \
     --script_directory "/wynton/home/ernst/jdlim/riboseq/riri" \
 
 
-singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
+# singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
 #   /wynton/home/ernst/jdlim/riboseq/riri/RNAseeker_pipe.sh \
 #     --get_metrics "/wynton/home/ernst/jdlim/riboseq/"
 
@@ -44,33 +44,23 @@ singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
 ##########################
 
 
-
-singularity shell "/wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif"
-
-
-
-
-
-
 singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
   /wynton/home/ernst/jdlim/riboseq/riri/riboSee_pipe.sh \
   --threads 8 \
-  --genome_reference "/wynton/home/ernst/jdlim/riboseq/riri/references/Mycobacterium_tuberculosis_H37Rv_genome_v4.fasta" \
-  --GTF_reference "/wynton/home/ernst/jdlim/riboseq/riri/references/Mycobacterium_tuberculosis_H37Rv_gff_v4.gff" \
-  --read_dir \
-  --reads \
-  --out_dir \
+  --genome_reference "/wynton/home/ernst/jdlim/riboseq/riri/references/NC_000962.fasta" \
+  --GTF_reference "/wynton/home/ernst/jdlim/riboseq/riri/references/NC_000962.gff" \
+  --reads "/wynton/home/ernst/jdlim/riboseq/fastq/${nm}_R1.fq.gz" \
+  --out_dir "/wynton/home/ernst/jdlim/riboseq" \
   --name "$nm" \
-  --strand \
+  --strand "yes" \
   --script_directory "/wynton/home/ernst/jdlim/riboseq/riri" \
   --fastQC \
-  --max_missmatch \
-  --min_len \
-  --max_len \
-  --trim_fasta
+  --max_missmatch 2 \
+  --min_len 24 \
+  --max_len 36 \
+  --trim_fasta "/wynton/home/ernst/jdlim/riboseq/riri/references/adapts.fasta"
 
-
-singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
+# singularity exec /wynton/home/ernst/jdlim/riboseq/riri_v0.1.sif \
 #   /wynton/home/ernst/jdlim/riboseq/riri/riboSee_pipe.sh \
 #     --get_metrics "/wynton/home/ernst/jdlim/riboseq/"
 

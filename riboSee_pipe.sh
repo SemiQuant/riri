@@ -15,8 +15,7 @@ usage () {
     -t|--threads
     -g|--genome_reference = path to genome reference
     -gtf|--GTF_reference
-    -rd|--read_dir
-    -r1|--read2 = the fastq file
+    -r|--reads = the fastq file
     -o|--out_dir
     -n|--name = output name
     -s|--strand = stranded library (yes|no|reverse)
@@ -148,14 +147,14 @@ export _JAVA_OPTIONS=-Xmx"${jav_ram%.*}G"
 strand="${strand:-no}"
 
 max_missmatch="${max_missmatch:-2}"
-min_len="${strand:-24}"
-max_len="${strand:-36}"
+min_len="${min_len:-24}"
+max_len="${max_len:-36}"
 
 trim_tmp="${Script_dir}/references/adapts.fasta"
 trim_fasta="${trim_fasta:-trim_tmp}"
-ref_tmp="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_genome_v4.fasta"
+ref_tmp="${Script_dir}/references/NC_000962.fasta"
 ref="${ref:-ref_tmp}"
-gtf_tmp="${Script_dir}/references/Mycobacterium_tuberculosis_H37Rv_gff_v4.gff"
+gtf_tmp="${Script_dir}/references/NC_000962.gff"
 gtf="${gtf:-gtf_tmp}"
 
 
@@ -169,33 +168,49 @@ command -v metagene >/dev/null 2>&1 || { echo >&2 "I require plastid but it's no
 
 
 # easiest, but not robust
-mkdir -p "${read_dir}/${nme}_riri"
-cd "${read_dir}/${nme}_riri"
-ln -s "$reads" "${read_dir}/${nme}_riri/"
+mkdir -p "${out_dir}/${nme}_riri"
+cd "${out_dir}/${nme}_riri"
+ln -s "$reads" "${out_dir}/${nme}_riri/"
 #####################
 
 
 
 ######################
 ## setup references ##
-if [ ! -e "${1/.f*/}.ebwtl" ] 
+if [ ! -e "${ref}.1.ebwt}" ] 
 then
-  bowtie-build --threads $threads "$ref" "${ref/.f*/}"
+  bowtie-build --threads $threads "$ref" "$ref"
 fi
 
-# generate metagene `roi` file
-if [ ! -e ?? ] 
+ref_rem="${ref/.f*/_rRNAs.fasta}"
+if [ ! -e "${ref_rem}.1.ebwt" ] 
 then
+  # split rRNAs an tRNAs
+  awk '{if ($3 == "tRNA" || $3 == "rRNA") print $0;}' "$gtf" > "${gtf/.g*/_rRNA.gtf}"
+  bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" > "$ref_rem"
+  bowtie-build --threads $threads "$ref_rem" "$ref_rem"
+fi
+
+
+# generate metagene `roi` file
+if [ ! -e "${ref/.f*/_rois.txt}" ]
+then
+
+if [[ "${gtf##*.}" == "gff" ]]
+then
+  if [ -e "${gtf/.gff/.gtf}" ]
+  then
+    local gtf="${gtf/.gff/.gtf}"
+  else
+    gffread "$gtf" -T -o "${gtf/.gff/_tmp.gtf}"
+    gtf="${gtf/.gff/_tmp.gtf}"
+    fi
+  fi
   metagene generate "${ref/.f*/}" \
     --landmark cds_start \
     --annotation_files "$gtf"
-
 fi
 
-# split rRNAs an tRNAs
-awk '{if ($3 == "tRNA" || $3 == "rRNA") print $0;}' "$gtf" > "${gtf/.g*/_rRNA.gtf}"
-ref_rem="${ref/.f*/.rRNAs.fasta}"
-bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" > "$ref_rem"
 ######################
 
 
@@ -213,9 +228,18 @@ qc_trim_SE $threads "$reads" "$trim_fasta" "$min_len"
 # align reads
 bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -a -v $max_missmatch \
   --un "${reads}_cleaned.fq" > /dev/null
+  # > "${nme}_rRNA.sam"
+# samtools view -bS "${nme}_rRNA.sam" | samtools sort -@ $threads -O "bam" -T "working" -o "${nme}_rRNA.bam" 
+# rm "${nme}_rRNA.sam"
+# samtools index "${nme}_rRNA.bam"
+# samtools flagstat "${nme}_rRNA.bam"
 
 reads="${reads}_cleaned.fq"
 bowtie --threads $threads -S --seed 1987 -x "$ref" -q "$reads" -a -v $max_missmatch "${nme}.sam"
+samtools view -bS "${nme}.sam" | samtools sort -@ $threads -O "bam" -T "working" -o "${nme}.bam"
+samtools index "${nme}.bam"
+rm "${nme}.sam"
+samtools flagstat "${nme}.bam"
 
 
 # count alignments
@@ -223,8 +247,12 @@ htseq-count --nprocesses $threads --type "gene" --idattr "Name" --order "name" -
   --minaqual 10 --nonunique none -f bam "${nme}.bam" "$gtf" --counts_output "${nme/.bam/_HTSeq.counts.tsv}"
 # featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "gene" -g "Name" -O -Q 5 --ignoreDup -T $5 -a "$4" "$fCount" -o "${3/.bam/.featCount.counts}" "$3"
 
+htseq-count --nprocesses $threads --type "CDS" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
+  --minaqual 10 --nonunique none -f bam "${nme}.bam" "$gtf" --counts_output "${nme/.bam/_HTSeq.CDS.counts.tsv}"
+
+
 # 5′ mapped sites of RPFs
-psite "${ref/.f*/.txt}" "${nme}_riboprofile" \
+psite "${ref/.f*/_rois.txt}" "${nme}_riboprofile" \
   --min_length $min_len \
   --max_length $max_len \
   --require_upstream \
