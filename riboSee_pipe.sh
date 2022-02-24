@@ -110,10 +110,10 @@ qc_trim_SE () {
         "$out_fq" \
         ILLUMINACLIP:"$3":2:30:10 LEADING:2 TRAILING:2 SLIDINGWINDOW:3:10 MINLEN:$4
 
-    echo "FastQC post trimming"
     #FastQC post
     if  [[ ! -z $fastQC ]]
     then
+      echo "FastQC post trimming"
       fastqc -t $1 "${2/.f*/.trimmed.fq.gz}" -o "${5}/"
     fi
 
@@ -207,15 +207,15 @@ if [[ "${gtf##*.}" == "gff" ]]
 then
   if [ -e "${gtf/.gff/.gtf}" ]
   then
-    gtf="${gtf/.gff/.gtf}"
+    gtf_ps="${gtf/.gff/.gtf}"
   else
     gffread "$gtf" -T -o "${gtf/.gff/_tmp.gtf}"
-    gtf="${gtf/.gff/_tmp.gtf}"
+    gtf_ps="${gtf/.gff/_tmp.gtf}"
     fi
   fi
   metagene generate "${ref/.f*/}" \
     --landmark cds_start \
-    --annotation_files "$gtf"
+    --annotation_files "$gtf_ps"
 fi
 
 ######################
@@ -226,6 +226,7 @@ fi
 # Fastqc
 if [[ ! -e "${reads/.f*/_fastqc.zip}" ]] && [[ ! -z $fastQC ]]
 then
+  echo "Fastqc pretrimming"
   fastqc -t $threads "$reads" -o "$out_dir"
 fi
 
