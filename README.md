@@ -28,8 +28,8 @@ I have written little to no error handling, so check logs etc.
 | -mm|--max\_missmatch | Maximum missmatches for alignment | 2 |
 | -mn|--min\_len | Mininum read length | 24 |
 | -mx|--max\_len | Maximum read length | 36 |
-| -tm|--trim\_fasta | Path to adapter and linkers multi fasta | ${Script\_dir}/references/adapts.fasta |
-
+| -tm|--trim\_fasta | Path to adapter and linkers multi fasta, uses Trimmomatic | ${Script\_dir}/references/adapts.fasta |
+| -ca|--cut\adapt | Adapter sequence to cut (e.g., CTGTAGGCACCATCAAT); Overwrites trim_fasta and uses CutAdapter | NA |
 
 
 ## RNAseeker
