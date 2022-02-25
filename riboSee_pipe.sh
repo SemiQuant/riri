@@ -199,13 +199,13 @@ out_dir="${out_dir}/${nme}_riri/"
 
 ######################
 ## setup references ##
-if [ ! -e "${ref}.1.ebwt}" ] 
+if [ ! -f "${ref}.1.ebwt" ] 
 then
   bowtie-build --threads $threads "$ref" "$ref"
 fi
 
 ref_rem="${ref/.f*/_rRNAs.fasta}"
-if [ ! -e "${ref_rem}.1.ebwt" ] 
+if [ ! -f "${ref_rem}.1.ebwt" ] 
 then
   # split rRNAs an tRNAs
   awk '{if ($3 == "tRNA" || $3 == "rRNA") print $0;}' "$gtf" > "${gtf/.g*/_rRNA.gtf}"
@@ -215,13 +215,13 @@ fi
 
 
 # generate metagene `roi` file
-if [ ! -e "${ref/.f*/_rois.txt}" ]
+if [ ! -f "${ref/.f*/_rois.txt}" ]
 then
-    if [[ ! -e "${gtf_ps}_5p.gtf" ]]
+    if [ ! -f "${gtf_ps}_5p.gtf" ]
     then
         if [[ "${gtf##*.}" == "gff" ]]
         then
-          if [ -e "${gtf/.gff/.gtf}" ]
+          if [ -f "${gtf/.gff/.gtf}" ]
           then
             gtf_ps="${gtf/.gff/.gtf}"
           else
@@ -234,7 +234,7 @@ then
         python3 "${Script_dir}/gtf_primer.py" --gtf_in "$gtf_ps" > /dev/null 2>&1
     fi
     metagene generate "${ref/.f*/}" \
-      --landmark CDS \
+      --landmark cds_start \
       --annotation_files "${gtf_ps}_5p.gtf"
 fi
 
@@ -291,7 +291,7 @@ psite "${ref/.f*/_rois.txt}" "${nme}_riboprofile" \
   --count_files "${out_dir}/${nme}.bam"
 
 
-rm "${reads}_cleaned.fq"
+rm "${reads}"
 ##############        
 
 

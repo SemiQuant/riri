@@ -8,7 +8,7 @@ args = parser.parse_args()
 gtf_out = args.gtf_in + "_5p.gtf"
 
 new_gtf = open(gtf_out,"w")
-upstream_utr_length = 50
+upstream_utr_length = 30
 
 ORFS = GTF2_TranscriptAssembler(open(args.gtf_in))
 for my_orf in ORFS:
