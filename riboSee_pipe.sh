@@ -254,10 +254,12 @@ samtools flagstat "${out_dir}/${nme}.bam"
 echo "HtSeq started"
 htseq-count --nprocesses $threads --type "gene" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
   --minaqual 10 --nonunique none -f bam "${out_dir}/${nme}.bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.gene.counts.tsv"
+
 # featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "gene" -g "Name" -O -Q 5 --ignoreDup -T $5 -a "$4" "$fCount" -o "${3/.bam/.featCount.counts}" "$3"
 
 htseq-count --nprocesses $threads --type "CDS" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
   --minaqual 10 --nonunique none -f bam "${out_dir}/${nme}.bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.CDS.counts.tsv"
+
 
 
 # 5′ mapped sites of RPFs
