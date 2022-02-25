@@ -83,6 +83,9 @@ declare_globals () {
         -tm|--trim_fasta)
         trim_fasta="$2"
         ;;
+        -ca|--cut_adapt)
+        cut_adapt="$2"
+        ;;
     esac
         shift
     done
@@ -104,11 +107,23 @@ qc_trim_SE () {
     out_fq="${2/.f*/.trimmed.fq.gz}"
     out_fq="$(basename $out_fq)"
     out_fq="${5}/${out_fq}"
+
+    if [[ ! -z $cut_adapt ]]
+    then
+      cutadapt --cores=$1 \
+        --quality-cutoff 10,10 \
+        --minimum-length $4 \
+        -g $cut_adapt \
+        -o "${5}/${out_fq}" "$2"
+      # Regular 3’ adapter  -a ADAPTER
+      # Regular 5’ adapter  -g ADAPTER
+    else
       java -jar "$TRIM" SE \
         -threads $1 \
         "$2" \
         "$out_fq" \
         ILLUMINACLIP:"$3":2:30:10 LEADING:2 TRAILING:2 SLIDINGWINDOW:3:10 MINLEN:$4
+    fi
 
     #FastQC post
     if  [[ ! -z $fastQC ]]
@@ -202,20 +217,25 @@ fi
 # generate metagene `roi` file
 if [ ! -e "${ref/.f*/_rois.txt}" ]
 then
-
-if [[ "${gtf##*.}" == "gff" ]]
-then
-  if [ -e "${gtf/.gff/.gtf}" ]
-  then
-    gtf_ps="${gtf/.gff/.gtf}"
-  else
-    gffread "$gtf" -T -o "${gtf/.gff/_tmp.gtf}"
-    gtf_ps="${gtf/.gff/_tmp.gtf}"
+    if [[ ! -e "${gtf_ps}_5p.gtf" ]]
+    then
+        if [[ "${gtf##*.}" == "gff" ]]
+        then
+          if [ -e "${gtf/.gff/.gtf}" ]
+          then
+            gtf_ps="${gtf/.gff/.gtf}"
+          else
+            gffread "$gtf" -T -o "${gtf/.gff/_tmp.gtf}"
+            gtf_ps="${gtf/.gff/_tmp.gtf}"
+            fi
+          fi
+        # run python script to make understandable gtf_tmp
+        # this is only bcause bacterial annotations in file
+        python3 "${Script_dir}/gtf_primer.py" --gtf_in "$gtf_ps" > /dev/null 2>&1
     fi
-  fi
-  metagene generate "${ref/.f*/}" \
-    --landmark cds_start \
-    --annotation_files "$gtf_ps"
+    metagene generate "${ref/.f*/}" \
+      --landmark CDS \
+      --annotation_files "${gtf_ps}_5p.gtf"
 fi
 
 ######################
