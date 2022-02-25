@@ -14,6 +14,12 @@ install.packages(c("plotly", "tidyverse", "BiocManager", "DESeq2", "parallel", "
   "ggplot2", "heatmaply", "adegenet"), quietly = T)
 BiocManager::install(c("riboSeqR", "systemPipeR"))
 devtools::install_github("LabTranslationalArchitectomics/riboWaltz", dependencies = TRUE)
+devtools::install_github("xryanglab/xtail", dependencies = TRUE)
+# install.packages("xtail",
+#                  repos = NULL, 
+#                  type = "source")
+devtools::install_github("LabTranslationalArchitectomics/riboWaltz", dependencies = TRUE, 
+               build_opts = c("--no-resave-data"), build_vignettes = TRUE)
 ```
 
 
@@ -234,4 +240,97 @@ p <- heatmaply::heatmaply(deSeq_assay,
 
 
 
+
+
+
+
+
+```{r systemPipeR}
+require(systemPipeR)
+require(GenomicFeatures)
+require(ggplot2)
+require(grid)
+
+gtf_file <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
+txdb <- makeTxDbFromGFF(file = gtf_file)
+feat <- genFeatures(txdb, featuretype = "all", reduce_ranges = TRUE,
+                    upstream = 50, downstream = 50, verbose = TRUE)
+
+
+
+bam_path <- "/Users/SemiQuant/Downloads/riboDelete/riboSeq_R1.bam"
+(bf <- BamFileList(bam_path))
+
+fc <- featuretypeCounts(bfl = bf,
+                        grl = feat, singleEnd = TRUE, readlength = NULL, type = "data.frame")
+
+
+p <- plotfeaturetypeCounts(x = fc, graphicsfile = "~/Downloads/riboDelete/featureCounts.png",
+                           graphicsformat = "png", scales = "fixed", anyreadlength = TRUE,
+                           scale_length_val = NULL)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Not working with current alignment method -->
+```{r}
+require(tidyverse)
+require(riboWaltz)
+# browseVignettes("riboWaltz")
+
+gtf_file <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gtf_5p.gtf"
+bam_path <- "/Users/SemiQuant/Downloads/riboDelete"
+
+
+annotation_dt <- create_annotation(gtfpath = gtf_file)
+
+# to get the other names
+gtf <- rtracklayer::import(gtf_file)
+gtf <- as.data.frame(gtf)
+annots <- gtf %>% 
+  select(locus_tag, transcript_id) %>% 
+  unique
+annots <- annots[match(annotation_dt$transcript, annots$transcript_id),]
+table(annotation_dt$transcript == annots$transcript_id)
+# annotation_dt$transcript <- annots$transcript_id
+
+# make this up
+annotation_dt$l_utr5 <- annotation_dt$l_utr3 <- 30
+
+
+
+
+reads_list <- bamtolist(bamfolder = bam_path, annotation = annotation_dt, transcript_align = F)
+filtered_list <- duplicates_filter(data = example_reads_list,
+                                   extremity = "both")
+
+filtered_list <- length_filter(data = example_reads_list,
+                               length_filter_mode = "periodicity",
+                               periodicity_threshold = 70)
+
+
+psite_offset <- psite(reads_list, flanking = 6, extremity = "auto")
+
+
+
+
+
+
+bamtolist
+
+```
 

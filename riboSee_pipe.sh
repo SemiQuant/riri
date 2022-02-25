@@ -231,11 +231,11 @@ then
           fi
         # run python script to make understandable gtf_tmp
         # this is only bcause bacterial annotations in file
-        python3 "${Script_dir}/gtf_primer.py" --gtf_in "$gtf_ps" > /dev/null 2>&1
+        # python3 "${Script_dir}/gtf_primer.py" --gtf_in "$gtf_ps" > /dev/null 2>&1
     fi
     metagene generate "${ref/.f*/}" \
       --landmark cds_start \
-      --annotation_files "${gtf_ps}_5p.gtf"
+      --annotation_files "$gtf_ps"
 fi
 
 ######################
@@ -283,17 +283,77 @@ htseq-count --nprocesses $threads --type "CDS" --idattr "Name" --order "name" --
 
 
 # 5′ mapped sites of RPFs
-echo "psite started"
-psite "${ref/.f*/_rois.txt}" "${nme}_riboprofile" \
-  --min_length $min_len \
-  --max_length $max_len \
-  --require_upstream \
-  --count_files "${out_dir}/${nme}.bam"
+# Not working
+# # generate metagene `roi` file
+# if [ ! -f "${ref/.f*/_rois.txt}" ]
+# then
+#     if [ ! -f "${gtf_ps}_5p.gtf" ]
+#     then
+#         if [[ "${gtf##*.}" == "gff" ]]
+#         then
+#           if [ -f "${gtf/.gff/.gtf}" ]
+#           then
+#             gtf_ps="${gtf/.gff/.gtf}"
+#           else
+#             gffread "$gtf" -T -o "${gtf/.gff/_tmp.gtf}"
+#             gtf_ps="${gtf/.gff/_tmp.gtf}"
+#             fi
+#           fi
+#         # run python script to make understandable gtf_tmp
+#         # this is only bcause bacterial annotations in file
+#         python3 "${Script_dir}/gtf_primer.py" --gtf_in "$gtf_ps" > /dev/null 2>&1
+#     fi
+#     metagene generate "${ref/.f*/}" \
+#       --landmark cds_start \
+#       --annotation_files "${gtf_ps}_5p.gtf"
+# fi
 
+# echo "psite started"
+# psite "${ref/.f*/_rois.txt}" "${nme}_riboprofile" \
+#   --min_length $min_len \
+#   --max_length $max_len \
+#   --require_upstream \
+#   --count_files "${out_dir}/${nme}.bam"
+
+
+# metagene generate NC_000962 \
+#     --landmark cds_start \
+#     --annotation_files NC_000962.gtf
+phase_by_size "${ref/.f*/_rois.txt}" "${nme}_phase_by_size" \
+    --count_files "${out_dir}/${nme}.bam" \
+    --fiveprime --offset 14 \
+    --codon_buffer 5 \
+    --min_length $min_len \
+    --max_length $max_len
+
+mkdir "${out_dir}/count_vectors"
+get_count_vectors --annotation_files "${ref/.f*/_rois.bed}" \
+    --annotation_format BED \
+    --count_files "${out_dir}/${nme}.bam" \
+    --fiveprime \
+    --offset 14 \
+    --min_length $min_len \
+    --max_length $max_len \
+    "${out_dir}/count_vectors"
+
+metagene count "${ref/.f*/_rois.txt}" "${nme}_count" \
+                 --count_files "${out_dir}/${nme}.bam" \
+                 --fiveprime --offset 14 --normalize_over 30 200 \
+                 --min_counts 10 --cmap Blues
+
+metagene chart "${nme}_counts_strt.png" \
+                "${nme}_count_metagene_profile.txt" \
+                 --landmark "start codon"
+
+metagene chart "${nme}_counts_peak.png" \
+                "${nme}_count_metagene_profile.txt" \
+                 --landmark "highest ribosome peak"
 
 rm "${reads}"
 ##############        
 
+# sort GTF file 
+# cat my_file.gtf | grep -v "#" | sort -k1,1 -k4,4n >my_file_sorted.gtf
 
 
 
