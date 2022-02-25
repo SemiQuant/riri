@@ -336,6 +336,39 @@ get_count_vectors --annotation_files "${ref/.f*/_rois.bed}" \
     --max_length $max_len \
     "${out_dir}/count_vectors"
 
+# '''
+# # from plastid import BAMGenomeArray, FivePrimeMapFactory, BED_Reader, Transcript
+# # transcripts = BED_Reader("/wynton/home/ernst/jdlim/riboseq/delete/NC_000962_rois.bed", return_type=Transcript)
+# # for transcript in transcripts:
+# #         print(transcripts)
+
+# import numpy
+# my_vector = numpy.loadtxt("/wynton/home/ernst/jdlim/riboseq/delete/count_vectors/Rv1669.txt")
+
+
+# # 30-codon sliding window average
+# window = numpy.ones(90).astype(float)/90.0
+# sliding_window_avg = numpy.convolve(my_vector,window,mode="valid")
+
+
+# # plot
+# import matplotlib.pyplot as plt
+
+# plt.plot(my_vector)
+# plt.plot(sliding_window_avg,label="30 codon average")
+# plt.xlabel("Position in transcript (5' to 3')")
+# plt.ylabel("Ribosome counts")
+
+# # add outlines at start & stop codons
+# # plt.axvline(my_transcript.cds_start, color="#999999",dashes=[3,2],zorder=-1)
+# # plt.axvline(my_transcript.cds_end, color="#999999",dashes=[3,2],zorder=-1)
+
+# plt.legend()
+# plt.show()
+# # plt.savefig( "test.png")
+# '''
+
+
 metagene count "${ref/.f*/_rois.txt}" "${nme}_count" \
                  --count_files "${out_dir}/${nme}.bam" \
                  --fiveprime --offset 14 --normalize_over 30 200 \
