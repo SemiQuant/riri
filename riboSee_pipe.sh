@@ -263,7 +263,7 @@ bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -a -v $max_missm
 # samtools flagstat "${nme}_rRNA.bam"
 
 reads="${reads}_cleaned.fq"
-bowtie --threads $threads -S --seed 1987 -x "$ref" -q "$reads" -a -v $max_missmatch "${out_dir}/${nme}.sam"
+bowtie --threads $threads -S --seed 1987 -x "$ref" -q "$reads" -m 5 --best --strata -a -v $max_missmatch "${out_dir}/${nme}.sam"
 samtools view -bS "${out_dir}/${nme}.sam" | samtools sort -@ $threads -O "bam" -T "working" -o "${out_dir}/${nme}.bam"
 samtools index "${out_dir}/${nme}.bam"
 rm "${out_dir}/${nme}.sam"
@@ -321,7 +321,8 @@ htseq-count --nprocesses $threads --type "CDS" --idattr "Name" --order "name" --
 #     --annotation_files NC_000962.gtf
 phase_by_size "${ref/.f*/_rois.txt}" "${nme}_phase_by_size" \
     --count_files "${out_dir}/${nme}.bam" \
-    --fiveprime --offset 14 \
+    --fiveprime \
+    --offset 14 \
     --codon_buffer 5 \
     --min_length $min_len \
     --max_length $max_len
@@ -367,7 +368,6 @@ get_count_vectors --annotation_files "${ref/.f*/_rois.bed}" \
 # plt.show()
 # # plt.savefig( "test.png")
 # '''
-
 
 metagene count "${ref/.f*/_rois.txt}" "${nme}_count" \
                  --count_files "${out_dir}/${nme}.bam" \

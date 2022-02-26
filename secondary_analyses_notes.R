@@ -268,6 +268,25 @@ fc <- featuretypeCounts(bfl = bf,
 p <- plotfeaturetypeCounts(x = fc, graphicsfile = "~/Downloads/riboDelete/featureCounts.png",
                            graphicsformat = "png", scales = "fixed", anyreadlength = TRUE,
                            scale_length_val = NULL)
+
+# feat2 <- cdsBy(txdb, "tx")
+# 
+# fcov <- featureCoverage(bfl = bf, grl = feat2,
+#                         resizereads = NULL, readlengthrange = NULL, Nbins = 20, method = mean,
+#                         fixedmatrix = TRUE, resizefeatures = TRUE, upstream = 20,
+#                         downstream = 20, 
+#                         outfile = "~/Downloads/riboDelete/featureCoverage.xls",
+#                         overwrite = TRUE)
+# 
+# plotfeatureCoverage(covMA = fcov, method = mean, scales = "fixed",
+#                     extendylim = 2, scale_count_val = 10^6)
+# 
+# # nucleotide level coverage along entire transcripts/CDSs
+# cov <- featureCoverage(bfl = BamFileList(outpaths[1:2]), grl = grl[1],
+#                        resizereads = NULL, readlengthrange = NULL, Nbins = NULL,
+#                        method = mean, fixedmatrix = FALSE, resizefeatures = TRUE,
+#                        upstream = 20, downstream = 20, outfile = NULL)
+
 ```
 
 
