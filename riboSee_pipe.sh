@@ -129,7 +129,7 @@ qc_trim_SE () {
     if  [[ ! -z $fastQC ]]
     then
       echo "FastQC post trimming"
-      fastqc -t $1 "${2/.f*/.trimmed.fq.gz}" -o "${5}/"
+      fastqc -t $1 "${5}/${out_fq}" -o "${5}/"
     fi
 
     reads="$out_fq"
@@ -372,7 +372,7 @@ get_count_vectors --annotation_files "${ref/.f*/_rois.bed}" \
 metagene count "${ref/.f*/_rois.txt}" "${nme}_count" \
                  --count_files "${out_dir}/${nme}.bam" \
                  --fiveprime --offset 14 --normalize_over 30 200 \
-                 --min_counts 10 --cmap Blues
+                 --min_counts 20 --cmap Blues
 
 metagene chart "${nme}_counts_strt.png" \
                 "${nme}_count_metagene_profile.txt" \
