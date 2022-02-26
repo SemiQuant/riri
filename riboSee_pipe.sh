@@ -235,6 +235,7 @@ then
     fi
     metagene generate "${ref/.f*/}" \
       --landmark cds_start \
+      --downstream 100 \
       --annotation_files "$gtf_ps"
 fi
 
@@ -256,11 +257,6 @@ qc_trim_SE $threads "$reads" "$trim_fasta" "$min_len" "$out_dir"
 # align reads
 bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -a -v $max_missmatch \
   --un "${reads}_cleaned.fq" > /dev/null
-  # > "${nme}_rRNA.sam"
-# samtools view -bS "${nme}_rRNA.sam" | samtools sort -@ $threads -O "bam" -T "working" -o "${nme}_rRNA.bam" 
-# rm "${nme}_rRNA.sam"
-# samtools index "${nme}_rRNA.bam"
-# samtools flagstat "${nme}_rRNA.bam"
 
 reads="${reads}_cleaned.fq"
 bowtie --threads $threads -S --seed 1987 -x "$ref" -q "$reads" -m 5 --best --strata -a -v $max_missmatch "${out_dir}/${nme}.sam"
@@ -382,7 +378,7 @@ metagene chart "${nme}_counts_peak.png" \
                 "${nme}_count_metagene_profile.txt" \
                  --landmark "highest ribosome peak"
 
-rm "${reads}"
+rm "$reads"
 ##############        
 
 # sort GTF file 

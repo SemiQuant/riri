@@ -353,3 +353,44 @@ bamtolist
 
 ```
 
+
+
+
+```{r count_metagene_profile}
+
+nme="test"
+
+f <- "/Users/SemiQuant/Downloads/riboDelete/test_count_metagene_profile.txt"
+cnt <- read_tsv(f, comment = "#")
+cnt$Sample <- "S1"
+
+cnt2 <- cnt
+cnt2$Sample <- "S2"
+cnt <- rbind(cnt, cnt2)
+
+
+
+
+# do this for all samples together
+cnt %>% 
+  filter(!is.na(metagene_average)) %>% 
+  plot_ly(x = ~x, y = ~metagene_average, type = 'scatter', mode = 'lines', color = ~Sample)
+
+cnt %>% 
+  filter(!is.na(metagene_average)) %>% 
+  dplyr::select(-regions_counted) %>% 
+  pivot_wider(names_from = Sample,
+              values_from = metagene_average
+              ) %>% 
+  dplyr::select(-x) %>% 
+heatmaply(#row_side_colors = .colnames(),
+          hclust_method = "complete",
+          dist_method = "manhattan",
+          fontsize_row = 5,
+          fontsize_col = 5,
+          # row_text_angle = 45,
+          plot_method = "plotly"
+) 
+
+```
+
