@@ -116,25 +116,25 @@ qc_trim_SE () {
   if [[ ! -z $cut_adapt ]]
   then
     cutadapt --cores=$1 \
-    --quality-cutoff 10,10 \
-    --minimum-length $4 \
-    -g $cut_adapt \
-    -o "${5}/${out_fq}" "$2"
+      --quality-cutoff 10,10 \
+      --minimum-length $4 \
+      -g $cut_adapt \
+      -o "${out_fq}" "$2"
       # Regular 3’ adapter  -a ADAPTER
       # Regular 5’ adapter  -g ADAPTER
     else
       java -jar "$TRIM" SE \
-      -threads $1 \
-      "$2" \
-      "$out_fq" \
-      ILLUMINACLIP:"$3":2:30:10 LEADING:2 TRAILING:2 SLIDINGWINDOW:3:10 MINLEN:$4
+        -threads $1 \
+        "$2" \
+        "$out_fq" \
+        ILLUMINACLIP:"$3":2:30:10 LEADING:2 TRAILING:2 SLIDINGWINDOW:3:10 MINLEN:$4
     fi
 
     #FastQC post
     if  [[ ! -z $fastQC ]]
     then
       echo "FastQC post trimming"
-      fastqc -t $1 "${5}/${out_fq}" -o "${5}/"
+      fastqc -t $1 "${out_fq}" -o "${5}/"
     fi
 
     reads="$out_fq"
