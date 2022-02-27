@@ -87,3 +87,45 @@ bowtie-build --threads $threads "${ref/.f*/_rRNAsMasked.fasta}" "${ref/.f*/_rRNA
 
 
 
+
+
+ref="/wynton/home/ernst/jdlim/riboseq/riri/references/NC_000962.fasta"
+threads=1
+gtf="/wynton/home/ernst/jdlim/riboseq/riri/references/NC_000962.gtf"
+
+
+    stable_rnas="$(bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" | grep -v ">" | tr '\n' ',')"
+    bowtie-build --threads $threads \
+      -c "$stable_rnas" \
+      "$ref_rem"
+
+
+
+
+
+
+ref="/wynton/home/ernst/jdlim/riboseq/riri/references/NC_000962.fasta"
+threads=1
+gtf="/wynton/home/ernst/jdlim/riboseq/riri/references/NC_000962.gtf"
+# echo ">stable_rnas" > "test.del.fasta"
+bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" > "test.del.fasta"
+bowtie-build --quiet --threads $threads -f "test.del.fasta" "test.del.fasta"
+
+bowtie-inspect "test.del.fasta"
+
+
+
+    stable_rnas="$(bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" | grep -v ">" | tr '\n' ',')"
+    bowtie-build --quiet --threads $threads \
+      -c "$stable_rnas" \
+"test.del.fasta"
+
+
+
+
+
+
+
+
+
+

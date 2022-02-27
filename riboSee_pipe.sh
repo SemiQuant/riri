@@ -207,7 +207,7 @@ out_dir="${out_dir}/${nme}_riri/"
 ## setup references ##
 if [ ! -f "${ref}.1.ebwt" ] 
 then
-  bowtie-build --threads $threads "$ref" "$ref"
+  bowtie-build --quiet --threads $threads -f "$ref" "$ref"
 fi
 
 ref_rem="${ref/.f*/_rRNAs.fasta}"
@@ -219,17 +219,22 @@ then
   then
     if [ ! -f "${ref/.f*/_rRNAsMasked.fasta}.1.ebwt" ]
     then
-      # bedtools maskfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" -fo "${ref/.f*/_rRNAsMasked.fasta}"
-      bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" > "${ref/.f*/_rRNAsMasked.fasta}"
-      bowtie-build --threads $threads "${ref/.f*/_rRNAsMasked.fasta}" "${ref/.f*/_rRNAsMasked.fasta}"
+      bedtools maskfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" -fo "${ref/.f*/_rRNAsMasked.fasta}"
+      bowtie-build --quiet --threads $threads -f "${ref/.f*/_rRNAsMasked.fasta}" "${ref/.f*/_rRNAsMasked.fasta}"
     fi
     ref="${ref/.f*/_rRNAsMasked.fasta}"
   else
+    # I have no idea why things are getting thourgh, I've tried all the below, all have similar results
+    bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" > "$ref_rem"
+    bowtie-build --quiet --threads $threads -f "$ref_rem" "$ref_rem"
     # bowtie cant handel multifasta, so just one per line
-    # bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" > "$ref_rem"
-    echo ">stableRNAs" > "$ref_rem"
-    bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" | grep -v ">" | tr --delete '\n' >> "$ref_rem"
-    bowtie-build --threads $threads "$ref_rem" "$ref_rem"
+    # echo ">stableRNAs" > "$ref_rem"
+    # bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" | grep -v ">" | tr --delete '\n' >> "$ref_rem"
+    # bowtie-build --quiet --threads $threads -f "$ref_rem" "$ref_rem"
+    # stable_rnas="$(bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" | grep -v ">" | tr '\n' ',')"
+    # bowtie-build --quiet --threads $threads \
+    #   -c "$stable_rnas" \
+    #   "$ref_rem"
   fi
 fi
 
