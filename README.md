@@ -15,6 +15,9 @@ There is also something strange happenign with the prealignemnts to the stable R
 If files dont execute then do this
 chmod +x RNAseeker_pipe.sh riboSee_pipe.sh gtf_primer.py singularity_continer_setup.sh
 
+## Download scripts
+git clone --recursive https://github.com/SemiQuant/riri.git
+
 ## Download singularity container
 ./RNAseeker_pipe.sh --container
 
