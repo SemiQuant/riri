@@ -259,9 +259,9 @@ then
         # python3 "${Script_dir}/gtf_primer.py" --gtf_in "$gtf_ps" > /dev/null 2>&1
   fi
       metagene generate "${ref/.f*/}" \
-      --landmark cds_start \
-      --downstream 100 \
-      --annotation_files "$gtf_ps"
+        --landmark cds_start \
+        --downstream 100 \
+        --annotation_files "$gtf_ps"
 fi
 
 ######################

@@ -4,12 +4,16 @@
 RiboSee is used to align singe end Ribosomal profiling reads (RiboSeq) to a reference, and output alignments, counts, psite determination, etc.
 RNAseeker is used to align pair-end sequencing to a reference, and output alignments, counts and statistics.
 
-I have written little to no error handling, so check logs etc.
-
 Secondary scripts can be used for analyses.
 - Differential RNAseq
 - Psite statistical anlayses
 - Etc
+
+I have written little to no error handling, so check logs etc.
+There is also something strange happenign with the prealignemnts to the stable RNAs and many are getting through, so I masked these in the reference just incase.
+
+If files dont execute then do this
+chmod +x RNAseeker_pipe.sh riboSee_pipe.sh gtf_primer.py singularity_continer_setup.sh
 
 ## Download singularity container
 ./RNAseeker_pipe.sh --container
