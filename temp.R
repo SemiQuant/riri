@@ -27,10 +27,13 @@
 require(RiboDiPA)
 bam_path <- list.files(pattern = ".bam$", "/Users/SemiQuant/Downloads/riboDelete/riboSeq_R1_riri", full.names = T)
 gtf <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
+
+classlabel <- data.frame(condition = c("mutant",  "wildtype"), comparison = c(2, 1))
+
 # https://bioconductor.org/packages/devel/bioc/vignettes/RiboDiPA/inst/doc/RiboDiPA.html#p-site-mapping
 ## Perform individual P-site mapping procedure
 data.psite <- psiteMapping(bam_file_list = bam_path, 
-                           gtf_file = gtf, psite.mapping = "auto", cores = 2)
+                           gtf_file = gtf, psite.mapping = "auto", cores = 5)
 
 ## P-site mapping offset rule generated
 data.psite$psite.mapping
