@@ -1,9 +1,15 @@
 # riri
 
 ## Pipelines to process bacterial PE RNAseq and SE RiboSeq
-IInfo about pipeines will go here
+RiboSee is used to align singe end Ribosomal profiling reads (RiboSeq) to a reference, and output alignments, counts, psite determination, etc.
+RNAseeker is used to align pair-end sequencing to a reference, and output alignments, counts and statistics.
 
 I have written little to no error handling, so check logs etc.
+
+Secondary scripts can be used for analyses.
+- Differential RNAseq
+- Psite statistical anlayses
+- Etc
 
 ## Download singularity container
 ./RNAseeker_pipe.sh --container
@@ -30,7 +36,7 @@ I have written little to no error handling, so check logs etc.
 | -mx|--max\_len | Maximum read length | 36 |
 | -tm|--trim\_fasta | Path to adapter and linkers multi fasta, uses Trimmomatic | ${Script\_dir}/references/adapts.fasta |
 | -ca|--cut\adapt | Adapter sequence to cut (e.g., CTGTAGGCACCATCAAT); Overwrites trim_fasta and uses CutAdapter | NA |
-
+| -ms|--mask | mask stable RNAs in reference instead of prealigning to them? | NA |
 
 ## RNAseeker
 

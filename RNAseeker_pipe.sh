@@ -13,7 +13,7 @@ Usage Options
     -t|--threads
     -g|--gtf = gtf file
     -r1|--read1
-    -r2|--read2 = the second fastq file if PE reads
+    -r2|--read2
     -n|--name = output name
     -o|--out_dir
     -m|--ram
