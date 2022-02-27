@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r packages, include=FALSE, eval=FALSE}
 install.packages(c("plotly", "tidyverse", "BiocManager", "DESeq2", "parallel", "xtail", "devtools",
   "ggplot2", "heatmaply", "adegenet"), quietly = T)
-BiocManager::install(c("riboSeqR", "systemPipeR"))
+BiocManager::install(c("riboSeqR", "systemPipeR", "RiboDiPA"))
 devtools::install_github("LabTranslationalArchitectomics/riboWaltz", dependencies = TRUE)
 devtools::install_github("xryanglab/xtail", dependencies = TRUE)
 # install.packages("xtail",

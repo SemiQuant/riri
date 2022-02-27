@@ -25,6 +25,7 @@ usage () {
   -mm|--max_missmatch (defult = 2)
   -mn|--min_len (defult = 24)
   -mx|--max_len (defult = 36)
+  -ms|--mask = mask stable RNAs in reference instead of prealigning?
   "
 }
 
@@ -86,6 +87,10 @@ trim_fasta="$2"
 -ca|--cut_adapt)
 cut_adapt="$2"
 ;;
+-ms|--mask)
+msk_or_rem="mask"
+;;
+
 esac
 shift
 done
@@ -159,8 +164,7 @@ then
 fi
 
 # Set defults
-msk_or_rem="Nomask" #for mask set to "mask"
-
+msk_or_rem="${msk_or_rem:-'Nomask'}"
 Script_dir_tmp="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 Script_dir="${Script_dir:-$Script_dir_tmp}"
 threads="${threads:-4}"
@@ -220,7 +224,10 @@ then
     fi
     ref="${ref/.f*/_rRNAsMasked.fasta}"
   else
-    bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" > "$ref_rem"
+    # bowtie cant handel multifasta, so just one per line
+    # bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" > "$ref_rem"
+    echo ">stableRNAs" > "$ref_rem"
+    bedtools getfasta -fi "$ref" -bed "${gtf/.g*/_rRNA.gtf}" | grep -v ">" >> "$ref_rem"
     bowtie-build --threads $threads "$ref_rem" "$ref_rem"
   fi
 fi
@@ -269,11 +276,8 @@ qc_trim_SE $threads "$reads" "$trim_fasta" "$min_len" "$out_dir"
 # align reads
 if [[ $msk_or_rem != "mask" ]]
 then
-  # not sure why this isnt working for all tRNAs, trying version below
-  # bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -a -v $max_missmatch \
-  # --un "${reads}_cleaned.fq" > /dev/null
-  bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -m 2 --best --strata -a -v $max_missmatch \
-    --un "${reads}_cleaned.fq" > /dev/null
+  bowtie --threads $threads --seed 1987 -x "$ref_rem" -q "$reads" -a -v $max_missmatch \
+    --un "${reads}_cleaned.fq" > /dev/null 
   reads="${reads}_cleaned.fq"
 fi
 
