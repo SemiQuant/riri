@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 install.packages(c("plotly", "tidyverse", "BiocManager", "DESeq2", "parallel", "xtail", "devtools",
   "ggplot2", "heatmaply", "adegenet"), quietly = T)
 BiocManager::install(c("riboSeqR", "systemPipeR", "RiboDiPA"))
-devtools::install_github("LabTranslationalArchitectomics/riboWaltz", dependencies = TRUE)
 devtools::install_github("xryanglab/xtail", dependencies = TRUE)
 # install.packages("xtail",
 #                  repos = NULL, 
@@ -22,27 +21,48 @@ devtools::install_github("LabTranslationalArchitectomics/riboWaltz", dependencie
                build_opts = c("--no-resave-data"), build_vignettes = TRUE)
 ```
 
-
+```{r load packages, message=FALSE, warning=FALSE}
+require(plotly)
+require(tidyverse)
+require(BiocManager)
+require(DESeq2)
+require(parallel)
+require(xtail)
+require(devtools)
+require(ggplot2)
+require(heatmaply)
+require(adegenet)
+require(riboSeqR)
+require(systemPipeR)
+require(RiboDiPA)
+require(riboWaltz)
+require(xtail)
+```
 
 ## Inspiration
 
-- https://bioconductor.org/packages/release/bioc/html/riboSeqR.html
+-   <https://bioconductor.org/packages/release/bioc/html/riboSeqR.html>
 
-- https://github.com/xryanglab/xtail
+-   <https://github.com/xryanglab/xtail>
 
-- https://bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRIBOseq.html
+-   <https://bioconductor.org/packages/devel/data/experiment/vignettes/systemPipeRdata/inst/doc/systemPipeRIBOseq.html>
 
-- https://github.com/LabTranslationalArchitectomics/riboWaltz
+-   <https://github.com/LabTranslationalArchitectomics/riboWaltz>
 
-- https://github.com/ratschlab/ribodiff
+-   <https://github.com/ratschlab/ribodiff>
 
-- https://pubmed.ncbi.nlm.nih.gov/19213877/#&gid=article-figures&pid=fig-4-uid-3
+-   <https://pubmed.ncbi.nlm.nih.gov/19213877/#&gid=article-figures&pid=fig-4-uid-3>
 
+-   <https://bioconductor.org/packages/devel/bioc/vignettes/RiboDiPA/inst/doc/RiboDiPA.html>
 
 ## Read in processed data and metadata, and check/clean
 
+```{r data}
+
+```
 
 ### Deseq
+
 ```{r}
 dds_1 <- DESeqDataSetFromMatrix(countData = counts,
   colData = meta,
@@ -234,17 +254,6 @@ p <- heatmaply::heatmaply(deSeq_assay,
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
 ```{r systemPipeR}
 require(systemPipeR)
 require(GenomicFeatures)
@@ -288,11 +297,6 @@ p <- plotfeaturetypeCounts(x = fc, graphicsfile = "~/Downloads/riboDelete/featur
 #                        upstream = 20, downstream = 20, outfile = NULL)
 
 ```
-
-
-
-
-
 
 ```{r psite}
 require(RiboDiPA)
@@ -343,17 +347,46 @@ plotTest(result = result.pst, genes.list = NULL, threshold = 0.05)
 
 ```
 
+```{r count_metagene_profile}
+
+nme="test"
+
+f <- "/Users/SemiQuant/Downloads/riboDelete/test_count_metagene_profile.txt"
+cnt <- read_tsv(f, comment = "#")
+cnt$Sample <- "S1"
+
+cnt2 <- cnt
+cnt2$Sample <- "S2"
+cnt <- rbind(cnt, cnt2)
 
 
 
 
+# do this for all samples together
+cnt %>% 
+  filter(!is.na(metagene_average)) %>% 
+  plot_ly(x = ~x, y = ~metagene_average, type = 'scatter', mode = 'lines', color = ~Sample)
 
+cnt %>% 
+  filter(!is.na(metagene_average)) %>% 
+  dplyr::select(-regions_counted) %>% 
+  pivot_wider(names_from = Sample,
+              values_from = metagene_average
+              ) %>% 
+  dplyr::select(-x) %>% 
+heatmaply(#row_side_colors = .colnames(),
+          hclust_method = "complete",
+          dist_method = "manhattan",
+          fontsize_row = 5,
+          fontsize_col = 5,
+          # row_text_angle = 45,
+          plot_method = "plotly"
+) 
 
-
-
-
+```
 
 <!-- Not working with current alignment method -->
+
 ```{r}
 require(tidyverse)
 require(riboWaltz)
@@ -400,45 +433,3 @@ psite_offset <- psite(reads_list, flanking = 6, extremity = "auto")
 bamtolist
 
 ```
-
-
-
-
-```{r count_metagene_profile}
-
-nme="test"
-
-f <- "/Users/SemiQuant/Downloads/riboDelete/test_count_metagene_profile.txt"
-cnt <- read_tsv(f, comment = "#")
-cnt$Sample <- "S1"
-
-cnt2 <- cnt
-cnt2$Sample <- "S2"
-cnt <- rbind(cnt, cnt2)
-
-
-
-
-# do this for all samples together
-cnt %>% 
-  filter(!is.na(metagene_average)) %>% 
-  plot_ly(x = ~x, y = ~metagene_average, type = 'scatter', mode = 'lines', color = ~Sample)
-
-cnt %>% 
-  filter(!is.na(metagene_average)) %>% 
-  dplyr::select(-regions_counted) %>% 
-  pivot_wider(names_from = Sample,
-              values_from = metagene_average
-              ) %>% 
-  dplyr::select(-x) %>% 
-heatmaply(#row_side_colors = .colnames(),
-          hclust_method = "complete",
-          dist_method = "manhattan",
-          fontsize_row = 5,
-          fontsize_col = 5,
-          # row_text_angle = 45,
-          plot_method = "plotly"
-) 
-
-```
-
