@@ -13,4 +13,3 @@ For codon-based analyses, 5′ mapped sites of RPFs (26–32 nt by default) tran
 
 Pause score is further used to evaluate codon pause events using PausePred local version with default parameters (37).
 
-
