@@ -1,7 +1,7 @@
 ---
 title: "RiboSeek Anlaysis"
 author: "SemiQuant"
-date: "2/23/2022"
+date: "2/28/2022"
 output: html_document
 ---
 
@@ -21,7 +21,7 @@ devtools::install_github("LabTranslationalArchitectomics/riboWaltz", dependencie
                build_opts = c("--no-resave-data"), build_vignettes = TRUE)
 ```
 
-```{r load packages, message=FALSE, warning=FALSE}
+```{r load packages, message=FALSE, warning=FALSE, include=FALSE}
 require(plotly)
 require(tidyverse)
 require(BiocManager)
@@ -66,8 +66,8 @@ require(xtail)
 ```{r}
 dds_1 <- DESeqDataSetFromMatrix(countData = counts,
   colData = meta,
-                                # tidy = T,
-                                design = ~ Cell + TBstatus)
+  # tidy = T,
+  design = ~ Cell + TBstatus)
 dds_1 <- estimateSizeFactors(dds_1)
 
 vst_1_blind <- vst(dds_1, blind = T)
@@ -75,16 +75,16 @@ vst_1_blind_cor <- cor(assay(vst_1_blind))
 
 # Heatmap of all transcripts color by groups ------------------------------------------------
 hmap_QC_1 <- heatmaply(vst_1_blind_cor,
-  symm = T,
+  # symm = T,
   col_side_colors = meta$phen,
   row_side_colors = meta$phen,
   hclust_method = "complete",
   dist_method = "manhattan",
   fontsize_row = 5,
   fontsize_col = 5,
-                    # row_text_angle = 45,
-                    plot_method = "plotly"
-                    ) 
+  # row_text_angle = 45,
+  plot_method = "plotly"
+  ) 
 
 
 
