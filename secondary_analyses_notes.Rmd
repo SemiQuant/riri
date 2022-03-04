@@ -64,6 +64,37 @@ require(xtail)
 ### Deseq
 
 ```{r}
+files_in <- list.files("/Users/SemiQuant/Downloads/yux", "*.NC_000962.HTSeq.counts",
+                       full.names = T, recursive = T)
+
+genes <- read_tsv(files_in[1], col_names = F, show_col_types = F, col_select = "X1")
+
+counts <- files_in %>%
+  map(read_tsv, col_names = F, show_col_types = F, col_select = "X2") %>%
+  reduce(cbind)
+
+colnames(counts) <- gsub(".NC_000962.HTSeq.counts", "", basename(files_in))
+counts <- cbind(genes, counts)
+
+counts <- counts %>% 
+  dplyr::slice(1:(nrow(genes)-5))
+
+counts %>%
+  mutate(n = 1:nrow(counts)) %>%
+  pivot_longer(!n, names_to = "Gene", values_to = "count") %>%
+  plot_ly(x = ~n, y = ~count, type = 'scatter', mode = 'lines', color = ~Gene)
+
+
+# filter those without any counts but do it after selecting groups etc
+counts <- counts[rowSums(counts[-c(1)], na.rm = T) >= 10, ]
+
+gen_names <- counts$X1
+rownames(counts) <- gen_names
+
+counts <- counts %>%
+  dplyr::select(-c(1))
+
+
 dds_1 <- DESeqDataSetFromMatrix(countData = counts,
   colData = meta,
   # tidy = T,

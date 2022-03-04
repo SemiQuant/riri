@@ -360,6 +360,9 @@ get_count_vectors --annotation_files "${ref/.f*/_rois.bed}" \
   --max_length $max_len \
   "${out_dir}/count_vectors"
 
+zip -q -r "${out_dir}/count_vectors.zip" "${out_dir}/count_vectors"
+rm -r "${out_dir}/count_vectors"
+
 # '''
 # # from plastid import BAMGenomeArray, FivePrimeMapFactory, BED_Reader, Transcript
 # # transcripts = BED_Reader("/wynton/home/ernst/jdlim/riboseq/delete/NC_000962_rois.bed", return_type=Transcript)
@@ -409,6 +412,7 @@ if [[ $msk_or_rem != "mask" ]]
 then
   rm "$reads"
 fi
+
 ##############        
 
 # sort GTF file 
