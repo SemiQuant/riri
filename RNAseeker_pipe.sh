@@ -274,7 +274,7 @@ do_calcs () {
 
 
     echo "Started htseq-count $(basename $2)"
-    htseq-count --type "gene" --idattr "Name" --order "name" --mode "union" --stranded "$strand" -a 5 --nonunique all -f bam "$3" "$4" > "${3/bam/HTSeq.counts}" #
+    htseq-count --nprocesses $5 --type "gene" --idattr "Name" --order "name" --mode "union" --stranded "$strand" -a 5 --nonunique all -f bam "$3" "$4" > "${3/bam/HTSeq.counts}" #
 
     # or gene? - let user input type to count
     if [[ ! -z $feat ]]
