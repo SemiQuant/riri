@@ -63,6 +63,8 @@ require(grid)
 
 ```
 
+## RNAseq
+
 ### Deseq
 
 ```{r}
@@ -402,7 +404,9 @@ vol_plot <- function(deSeq_results = NULL, adj_p = 0.05, num_annotate = 10, effe
   
 }
 
-vol_plot(deSeq_results = res_1, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
+ggplotly(
+  vol_plot(deSeq_results = res_1, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
+)
 
 # 
 # 
@@ -416,13 +420,18 @@ vol_plot(deSeq_results = res_1, adj_p = 0.05, num_annotate = 10, effect_sizeThre
 #           # row_text_angle = 45,
 #           plot_method = "plotly"
 # )
-
-
 ```
 
 
 
 
+
+## riboSeq
+
+### Deseq
+
+
+### systemPipeR
 
 ```{r systemPipeR}
 gtf_file <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
@@ -462,6 +471,8 @@ p <- plotfeaturetypeCounts(x = fc, graphicsfile = "~/Downloads/riboDelete/featur
 
 ```
 
+
+### psites
 
 ```{r psite}
 require(RiboDiPA)
@@ -512,6 +523,8 @@ plotTest(result = result.pst, genes.list = NULL, threshold = 0.05)
 
 ```
 
+### metagene_profiles
+
 ```{r count_metagene_profile}
 
 nme="test"
@@ -550,6 +563,8 @@ heatmaply(#row_side_colors = .colnames(),
 
 ```
 
+
+## GRAVEYAARD
 <!-- Not working with current alignment method -->
 
 ```{r}
