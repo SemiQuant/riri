@@ -37,6 +37,8 @@ require(systemPipeR)
 require(RiboDiPA)
 require(riboWaltz)
 require(xtail)
+require(GenomicFeatures)
+require(grid)
 ```
 
 ## Inspiration
@@ -236,21 +238,197 @@ vol_plot(deSeq_results = res_1, adj_p = 0.05, num_annotate = 10, effect_sizeThre
 #           # row_text_angle = 45,
 #           plot_method = "plotly"
 # )
+files_in <- list.files("/Users/SemiQuant/Downloads/yux", "*.NC_000962.HTSeq.counts",
+                       full.names = T, recursive = T)
+
+genes <- read_tsv(files_in[1], col_names = F, show_col_types = F, col_select = "X1")
+
+counts <- files_in %>%
+  map(read_tsv, col_names = F, show_col_types = F, col_select = "X2") %>%
+  purrr::reduce(cbind)
+
+colnames(counts) <- gsub(".NC_000962.HTSeq.counts", "", basename(files_in))
+counts <- cbind(genes, counts)
+
+counts <- counts %>% 
+  dplyr::slice(1:(nrow(genes)-5))
+
+counts %>%
+  dplyr::select(-1) %>% 
+  mutate(n = 1:nrow(counts)) %>%
+  pivot_longer(!n, names_to = "Gene", values_to = "count") %>%
+  plot_ly(x = ~n, y = ~count, type = 'scatter', mode = 'lines', color = ~Gene)
+
+
+# filter those without any counts but do it after selecting groups etc
+counts <- counts[rowSums(counts[-c(1)], na.rm = T) >= 10, ]
+
+gen_names <- counts$X1
+rownames(counts) <- gen_names
+
+counts <- counts %>%
+  dplyr::select(-c(1))
+genes <- NULL
+
+
+
+
+meta <- data.frame(phen = c("w", "w", "w", "m", "m", "m"))
+
+dds_1 <- DESeqDataSetFromMatrix(countData = counts,
+                                colData = meta,
+                                # tidy = T,
+                                design = ~ phen) #Cell + TBstatus
+dds_1 <- estimateSizeFactors(dds_1)
+dds_1 <- DESeq(dds_1, parallel = T)
+res_1 <- results(dds_1)
+res_1 %>% 
+  data.frame() %>% 
+  filter(padj >= 0.5, abs(log2FoldChange) >= 0.5) %>% 
+  nrow()
+
+
+
+vst_1_blind <- vst(dds_1, blind = T)
+vst_1_blind_cor <- cor(assay(vst_1_blind))
+
+
+
+# Heatmap of all transcripts color by groups ------------------------------------------------
+hmap_QC_1 <- heatmaply(vst_1_blind_cor,
+                       # symm = T,
+                       col_side_colors = meta$phen,
+                       row_side_colors = meta$phen,
+                       hclust_method = "complete",
+                       dist_method = "manhattan",
+                       fontsize_row = 5,
+                       fontsize_col = 5,
+                       # row_text_angle = 45,
+                       plot_method = "plotly"
+) 
+
+
+
+PCA <- dudi.pca(df = t(assay(vst_1_blind)), center = T,
+                scale = T)
+
+p1 <- qplot(data = PCA$l1, x = RS1, y = RS2, colour = fac2col(meta$phen))
+p1 <- p1 + stat_ellipse(geom = "polygon", 
+                        level = 0.95,
+                        type = "norm",
+                        alpha = 0.3, aes(fill = meta$phen)) +
+  stat_ellipse(type = "euclid", linetype = 2, alpha = 0.3) # level = 0.2)
+
+
+pca_sum <- factoextra::get_eigenvalue(PCA)
+
+p1 <- ggplotly(p1 +
+                 # labs(title = title) + #, subtitle = "A subtitle"
+                 xlab(label = paste("PC1", "(", round(pca_sum$variance.percent[1], 0), "%)")) +
+                 ylab(label =  paste("PC2", "(", round(pca_sum$variance.percent[2], 0), "%)")
+                 )
+) %>% 
+  layout(
+    legend = list(
+      orientation = 'h',
+      y=-0.15)
+  )
+p1 
+
+
+
+# Corr heatmap ---------------
+(hp_corr <- heatmaply(vst_1_blind_cor,
+                      symm = T,
+                      col_side_colors = meta$phen,
+                      row_side_colors = meta$phen,
+                      hclust_method = "complete",
+                      dist_method = "euclidean", #"manhattan",
+                      fontsize_row = 5,
+                      fontsize_col = 5,
+                      # k_col=9,
+                      # k_row = 4,
+                      dendrogram = "both",
+                      # row_text_angle = 45,
+                      plot_method = "plotly"
+))
+
+
+
+# save(dds_in, file = "dds_in.Rdat")
+
+
+vol_plot <- function(deSeq_results = NULL, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T){
+  volc.plot <- data.frame(ID = rownames(deSeq_results),
+                          P = deSeq_results$pvalue,
+                          P.adj = deSeq_results$padj,
+                          EffectSize = deSeq_results$log2FoldChange,
+                          threshold = as.factor(deSeq_results$padj <= adj_p)
+                          # comparison = c("TB vs No TB")
+  )
+  
+  volc.plot$threshold <- as.factor(volc.plot$P.adj <= adj_p & abs(volc.plot$EffectSize) >= effect_sizeThresh)
+  
+  
+  # rewrite this, in a rush
+  effect_sizeThresh_2 <- abs(volc.plot[volc.plot$P.adj <= adj_p,]$EffectSize)
+  effect_sizeThresh_2 <- effect_sizeThresh_2[order(abs(effect_sizeThresh_2), decreasing = T)][num_annotate]
+  
+  
+  volc.plot$lab <- ifelse(volc.plot$P.adj <= adj_p & abs(volc.plot$EffectSize) >= effect_sizeThresh_2, as.character(volc.plot$ID), "")
+  
+  volc_DE_1 <- ggplot2::ggplot(data = volc.plot,
+                               ggplot2::aes(x = EffectSize, y = -log10(P),
+                                            colour = threshold, text = ID)) +
+    ggplot2::geom_point(alpha = 0.4, size = 1.75) +
+    # xlim(c(-6, 6)) +
+    ggplot2::xlab("Effect Size") + ggplot2::ylab("-log10 p-value") +
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.position = "none") +
+    ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                   panel.grid.minor = ggplot2::element_blank()) +
+    ggplot2::geom_text(ggplot2::aes(label = volc.plot$lab),
+                       hjust = 0, vjust = 0, colour = "dark grey", size = 2, nudge_x = 0.2)
+  
+  volc_DE_1 <- volc_DE_1 + ggplot2::geom_hline(yintercept = -log10(min(volc.plot$P[volc.plot$P.adj <= adj_p])), colour = "grey", linetype = "longdash") +
+    ggplot2::geom_vline(xintercept = c(-1*effect_sizeThresh, effect_sizeThresh), colour = "grey",linetype = "longdash")
+  # ggplot2::geom_hline(yintercept = -log10(adj_p), colour = "grey", linetype = "longdash") +
+  
+  
+  if (makePlot)
+    return(volc_DE_1)
+  else
+    return(volc.plot)
+  
+}
+
+vol_plot(deSeq_results = res_1, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
+
+# 
+# 
+# heatmaply(assay(vst_1_blind)[1:10,],
+#           # col_side_colors = colnames(vst_1_blind),
+#           # row_side_colors = meta$phen,
+#           hclust_method = "complete",
+#           dist_method = "manhattan",
+#           fontsize_row = 5,
+#           fontsize_col = 5,
+#           # row_text_angle = 45,
+#           plot_method = "plotly"
+# )
 
 
 ```
 
-```{r systemPipeR}
-require(systemPipeR)
-require(GenomicFeatures)
-require(ggplot2)
-require(grid)
 
+
+
+
+```{r systemPipeR}
 gtf_file <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
 txdb <- makeTxDbFromGFF(file = gtf_file)
 feat <- genFeatures(txdb, featuretype = "all", reduce_ranges = TRUE,
                     upstream = 50, downstream = 50, verbose = TRUE)
-
 
 
 bam_path <- "/Users/SemiQuant/Downloads/riboDelete/riboSeq_R1.bam"
@@ -283,6 +461,7 @@ p <- plotfeaturetypeCounts(x = fc, graphicsfile = "~/Downloads/riboDelete/featur
 #                        upstream = 20, downstream = 20, outfile = NULL)
 
 ```
+
 
 ```{r psite}
 require(RiboDiPA)
