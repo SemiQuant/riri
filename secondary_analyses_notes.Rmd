@@ -5,27 +5,35 @@ date: "2/28/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-```{r packages, include=FALSE, eval=FALSE}
+```{r packages, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 install.packages(c("plotly", "tidyverse", "BiocManager", "DESeq2", "parallel", "xtail", "devtools",
-  "ggplot2", "heatmaply", "adegenet"), quietly = T)
+                   "ggplot2", "heatmaply", "adegenet", "DT"), quietly = T)
 BiocManager::install(c("riboSeqR", "systemPipeR", "RiboDiPA"))
 devtools::install_github("xryanglab/xtail", dependencies = TRUE)
 # install.packages("xtail",
 #                  repos = NULL, 
 #                  type = "source")
 devtools::install_github("LabTranslationalArchitectomics/riboWaltz", dependencies = TRUE, 
-               build_opts = c("--no-resave-data"), build_vignettes = TRUE)
+                         build_opts = c("--no-resave-data"), build_vignettes = TRUE)
 ```
 
-```{r load packages, message=FALSE, warning=FALSE, include=FALSE}
+```{r, echo=FALSE}
+htmltools::a(
+  href="http://www.semiquant.com",
+  htmltools::img(src = knitr::image_uri("/Users/SemiQuant/Bioinformatics/Projects/riri/analysis/www/sq.png"), 
+                 alt = 'logo', 
+                 style = 'position:absolute; top:25px; left:270px; padding:0px', 
+                 width = "80px",
+                 heigth = "80px")
+  
+)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 require(plotly)
 require(tidyverse)
 require(BiocManager)
-require(DESeq2)
 require(parallel)
 require(xtail)
 require(devtools)
@@ -39,6 +47,53 @@ require(riboWaltz)
 require(xtail)
 require(GenomicFeatures)
 require(grid)
+require(DESeq2)
+require(DT)
+
+vol_plot <- function(deSeq_results = NULL, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T){
+  volc.plot <- data.frame(ID = rownames(deSeq_results),
+                          P = deSeq_results$pvalue,
+                          P.adj = deSeq_results$padj,
+                          EffectSize = deSeq_results$log2FoldChange,
+                          threshold = as.factor(deSeq_results$padj <= adj_p)
+                          # comparison = c("TB vs No TB")
+  )
+  
+  volc.plot$threshold <- as.factor(volc.plot$P.adj <= adj_p & abs(volc.plot$EffectSize) >= effect_sizeThresh)
+  
+  
+  # rewrite this, in a rush
+  effect_sizeThresh_2 <- abs(volc.plot[volc.plot$P.adj <= adj_p,]$EffectSize)
+  effect_sizeThresh_2 <- effect_sizeThresh_2[order(abs(effect_sizeThresh_2), decreasing = T)][num_annotate]
+  
+  
+  volc.plot$lab <- ifelse(volc.plot$P.adj <= adj_p & abs(volc.plot$EffectSize) >= effect_sizeThresh_2, as.character(volc.plot$ID), "")
+  
+  volc_DE_1 <- ggplot2::ggplot(data = volc.plot,
+                               ggplot2::aes(x = EffectSize, y = -log10(P),
+                                            colour = threshold, text = ID)) +
+    ggplot2::geom_point(alpha = 0.4, size = 1.75) +
+    # xlim(c(-6, 6)) +
+    ggplot2::xlab("Effect Size") + ggplot2::ylab("-log10 p-value") +
+    ggplot2::theme_bw() +
+    ggplot2::theme(legend.position = "none") +
+    ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                   panel.grid.minor = ggplot2::element_blank()) +
+    ggplot2::geom_text(ggplot2::aes(label = volc.plot$lab),
+                       hjust = 0, vjust = 0, colour = "dark grey", size = 2, nudge_x = 0.2)
+  
+  volc_DE_1 <- volc_DE_1 + ggplot2::geom_hline(yintercept = -log10(min(volc.plot$P[volc.plot$P.adj <= adj_p])), colour = "grey", linetype = "longdash") +
+    ggplot2::geom_vline(xintercept = c(-1*effect_sizeThresh, effect_sizeThresh), colour = "grey",linetype = "longdash")
+  # ggplot2::geom_hline(yintercept = -log10(adj_p), colour = "grey", linetype = "longdash") +
+  
+  
+  if (makePlot)
+    return(volc_DE_1)
+  else
+    return(volc.plot)
+  
+}
+
 ```
 
 ## Inspiration
@@ -57,18 +112,39 @@ require(grid)
 
 -   <https://bioconductor.org/packages/devel/bioc/vignettes/RiboDiPA/inst/doc/RiboDiPA.html>
 
+## NOTES
+
+-   We can cleanup the plots and labels etc. later
+-   Most plots are interactive
+-   I compared the 3 conditions to each other, but we can do more complex models that are harder to interpret/explain if you like.
+-   The stuff in the grey boxes is the code, I outputted it so you can see how to do it
+-   For the comparisons with the effect size on an axis, "for a particular gene, a log2 fold change of −1 for condition treated vs untreated means that the treatment induces a change in observed expression level of 2\^−1 = 0.5 compared to the untreated condition"
+    -   All the comparisons are versus the No Treatment (0) group, so a Negative Value means upregulated in the No Treatment and a positive value means upregulated in the Treatment Group.
+
 ## Read in processed data and metadata, and check/clean
 
-```{r data}
-
+```{r data 1, message=FALSE, warning=FALSE}
+mn_fld <- "/Users/SemiQuant/Bioinformatics/Projects/riri/analysis"
+meta <- tibble::tribble(
+  ~Filename,     ~Phen, ~Kasugamycin,
+  "NC_1_CKDL220001081-1a_HH5FFCCX2",    "NC",           0L,
+  "NC_2_CKDL220001082-1a_HH5FFCCX2",    "NC",           0L,
+  "T30min_1_CKDL220001083-1a_HH5FFCCX2", "30min",          30L,
+  "T30min_2_CKDL220001084-1a_HH5FFCCX2", "30min",          30L,
+  "T6h_1_CKDL220001085-1a_HH5FFCCX2",    "6h",         500L,
+  "T6h_2_CKDL220001086-1a_HH5FFCCX2",    "6h",         500L
+)
+meta$Kasugamycin <- as.factor(meta$Kasugamycin)
 ```
 
 ## RNAseq
 
+Analysis of the RNAseq data.
+
 ### Deseq
 
-```{r}
-files_in <- list.files("/Users/SemiQuant/Downloads/yux", "*.NC_000962.HTSeq.counts",
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+files_in <- list.files(paste0(mn_fld, "/rnaSeq"), "*.NC_000962.HTSeq.counts",
                        full.names = T, recursive = T)
 
 genes <- read_tsv(files_in[1], col_names = F, show_col_types = F, col_select = "X1")
@@ -100,15 +176,12 @@ counts <- counts %>%
   dplyr::select(-c(1))
 genes <- NULL
 
-
-
-
-meta <- data.frame(phen = c("w", "w", "w", "m", "m", "m"))
+meta <- meta[match(meta$Filename, colnames(counts)), ]
 
 dds_1 <- DESeqDataSetFromMatrix(countData = counts,
                                 colData = meta,
                                 # tidy = T,
-                                design = ~ phen) #Cell + TBstatus
+                                design = ~ Kasugamycin) #Cell + TBstatus
 dds_1 <- estimateSizeFactors(dds_1)
 dds_1 <- DESeq(dds_1, parallel = T)
 res_1 <- results(dds_1)
@@ -119,28 +192,28 @@ vst_1_blind_cor <- cor(assay(vst_1_blind))
 
 
 # Heatmap of all transcripts color by groups ------------------------------------------------
-hmap_QC_1 <- heatmaply(vst_1_blind_cor,
-                       # symm = T,
-                       col_side_colors = meta$phen,
-                       row_side_colors = meta$phen,
-                       hclust_method = "complete",
-                       dist_method = "manhattan",
-                       fontsize_row = 5,
-                       fontsize_col = 5,
-                       # row_text_angle = 45,
-                       plot_method = "plotly"
-) 
+(hmap_QC_1 <- heatmaply(vst_1_blind_cor,
+                        # symm = T,
+                        col_side_colors = meta$Phen,
+                        row_side_colors = meta$Phen,
+                        hclust_method = "complete",
+                        dist_method = "manhattan",
+                        fontsize_row = 5,
+                        fontsize_col = 5,
+                        # row_text_angle = 45,
+                        plot_method = "plotly"
+) )
 
 
 
 PCA <- dudi.pca(df = t(assay(vst_1_blind)), center = T,
-                scale = T)
+                scale = T, nf = 2, scannf = FALSE)
 
-p1 <- qplot(data = PCA$l1, x = RS1, y = RS2, colour = fac2col(meta$phen))
+p1 <- qplot(data = PCA$l1, x = RS1, y = RS2, colour = meta$Phen)
 p1 <- p1 + stat_ellipse(geom = "polygon", 
                         level = 0.95,
                         type = "norm",
-                        alpha = 0.3, aes(fill = meta$phen)) +
+                        alpha = 0.3, aes(fill = meta$Phen)) +
   stat_ellipse(type = "euclid", linetype = 2, alpha = 0.3) # level = 0.2)
 
 
@@ -164,8 +237,8 @@ p1
 # Corr heatmap ---------------
 (hp_corr <- heatmaply(vst_1_blind_cor,
                       symm = T,
-                      col_side_colors = meta$phen,
-                      row_side_colors = meta$phen,
+                      col_side_colors = meta$Phen,
+                      row_side_colors = meta$Phen,
                       hclust_method = "complete",
                       dist_method = "euclidean", #"manhattan",
                       fontsize_row = 5,
@@ -180,234 +253,22 @@ p1
 
 
 # save(dds_in, file = "dds_in.Rdat")
-
-
-vol_plot <- function(deSeq_results = NULL, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T){
-  volc.plot <- data.frame(ID = rownames(deSeq_results),
-                          P = deSeq_results$pvalue,
-                          P.adj = deSeq_results$padj,
-                          EffectSize = deSeq_results$log2FoldChange,
-                          threshold = as.factor(deSeq_results$padj <= adj_p)
-                          # comparison = c("TB vs No TB")
-  )
-  
-  volc.plot$threshold <- as.factor(volc.plot$P.adj <= adj_p & abs(volc.plot$EffectSize) >= effect_sizeThresh)
-  
-  
-  # rewrite this, in a rush
-  effect_sizeThresh_2 <- abs(volc.plot[volc.plot$P.adj <= adj_p,]$EffectSize)
-  effect_sizeThresh_2 <- effect_sizeThresh_2[order(abs(effect_sizeThresh_2), decreasing = T)][num_annotate]
-  
-  
-  volc.plot$lab <- ifelse(volc.plot$P.adj <= adj_p & abs(volc.plot$EffectSize) >= effect_sizeThresh_2, as.character(volc.plot$ID), "")
-  
-  volc_DE_1 <- ggplot2::ggplot(data = volc.plot,
-                               ggplot2::aes(x = EffectSize, y = -log10(P),
-                                            colour = threshold, text = ID)) +
-    ggplot2::geom_point(alpha = 0.4, size = 1.75) +
-    # xlim(c(-6, 6)) +
-    ggplot2::xlab("Effect Size") + ggplot2::ylab("-log10 p-value") +
-    ggplot2::theme_bw() +
-    ggplot2::theme(legend.position = "none") +
-    ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
-                   panel.grid.minor = ggplot2::element_blank()) +
-    ggplot2::geom_text(ggplot2::aes(label = volc.plot$lab),
-                       hjust = 0, vjust = 0, colour = "dark grey", size = 2, nudge_x = 0.2)
-  
-  volc_DE_1 <- volc_DE_1 + ggplot2::geom_hline(yintercept = -log10(min(volc.plot$P[volc.plot$P.adj <= adj_p])), colour = "grey", linetype = "longdash") +
-    ggplot2::geom_vline(xintercept = c(-1*effect_sizeThresh, effect_sizeThresh), colour = "grey",linetype = "longdash")
-  # ggplot2::geom_hline(yintercept = -log10(adj_p), colour = "grey", linetype = "longdash") +
-  
-  
-  if (makePlot)
-    return(volc_DE_1)
-  else
-    return(volc.plot)
-  
-}
-
-vol_plot(deSeq_results = res_1, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
-
-# 
-# 
-# heatmaply(assay(vst_1_blind)[1:10,],
-#           # col_side_colors = colnames(vst_1_blind),
-#           # row_side_colors = meta$phen,
-#           hclust_method = "complete",
-#           dist_method = "manhattan",
-#           fontsize_row = 5,
-#           fontsize_col = 5,
-#           # row_text_angle = 45,
-#           plot_method = "plotly"
-# )
-files_in <- list.files("/Users/SemiQuant/Downloads/yux", "*.NC_000962.HTSeq.counts",
-                       full.names = T, recursive = T)
-
-genes <- read_tsv(files_in[1], col_names = F, show_col_types = F, col_select = "X1")
-
-counts <- files_in %>%
-  map(read_tsv, col_names = F, show_col_types = F, col_select = "X2") %>%
-  purrr::reduce(cbind)
-
-colnames(counts) <- gsub(".NC_000962.HTSeq.counts", "", basename(files_in))
-counts <- cbind(genes, counts)
-
-counts <- counts %>% 
-  dplyr::slice(1:(nrow(genes)-5))
-
-counts %>%
-  dplyr::select(-1) %>% 
-  mutate(n = 1:nrow(counts)) %>%
-  pivot_longer(!n, names_to = "Gene", values_to = "count") %>%
-  plot_ly(x = ~n, y = ~count, type = 'scatter', mode = 'lines', color = ~Gene)
-
-
-# filter those without any counts but do it after selecting groups etc
-counts <- counts[rowSums(counts[-c(1)], na.rm = T) >= 10, ]
-
-gen_names <- counts$X1
-rownames(counts) <- gen_names
-
-counts <- counts %>%
-  dplyr::select(-c(1))
-genes <- NULL
-
-
-
-
-meta <- data.frame(phen = c("w", "w", "w", "m", "m", "m"))
-
-dds_1 <- DESeqDataSetFromMatrix(countData = counts,
-                                colData = meta,
-                                # tidy = T,
-                                design = ~ phen) #Cell + TBstatus
-dds_1 <- estimateSizeFactors(dds_1)
-dds_1 <- DESeq(dds_1, parallel = T)
-res_1 <- results(dds_1)
-res_1 %>% 
-  data.frame() %>% 
-  filter(padj >= 0.5, abs(log2FoldChange) >= 0.5) %>% 
-  nrow()
-
-
-
-vst_1_blind <- vst(dds_1, blind = T)
-vst_1_blind_cor <- cor(assay(vst_1_blind))
-
-
-
-# Heatmap of all transcripts color by groups ------------------------------------------------
-hmap_QC_1 <- heatmaply(vst_1_blind_cor,
-                       # symm = T,
-                       col_side_colors = meta$phen,
-                       row_side_colors = meta$phen,
-                       hclust_method = "complete",
-                       dist_method = "manhattan",
-                       fontsize_row = 5,
-                       fontsize_col = 5,
-                       # row_text_angle = 45,
-                       plot_method = "plotly"
-) 
-
-
-
-PCA <- dudi.pca(df = t(assay(vst_1_blind)), center = T,
-                scale = T)
-
-p1 <- qplot(data = PCA$l1, x = RS1, y = RS2, colour = fac2col(meta$phen))
-p1 <- p1 + stat_ellipse(geom = "polygon", 
-                        level = 0.95,
-                        type = "norm",
-                        alpha = 0.3, aes(fill = meta$phen)) +
-  stat_ellipse(type = "euclid", linetype = 2, alpha = 0.3) # level = 0.2)
-
-
-pca_sum <- factoextra::get_eigenvalue(PCA)
-
-p1 <- ggplotly(p1 +
-                 # labs(title = title) + #, subtitle = "A subtitle"
-                 xlab(label = paste("PC1", "(", round(pca_sum$variance.percent[1], 0), "%)")) +
-                 ylab(label =  paste("PC2", "(", round(pca_sum$variance.percent[2], 0), "%)")
-                 )
-) %>% 
-  layout(
-    legend = list(
-      orientation = 'h',
-      y=-0.15)
-  )
-p1 
-
-
-
-# Corr heatmap ---------------
-(hp_corr <- heatmaply(vst_1_blind_cor,
-                      symm = T,
-                      col_side_colors = meta$phen,
-                      row_side_colors = meta$phen,
-                      hclust_method = "complete",
-                      dist_method = "euclidean", #"manhattan",
-                      fontsize_row = 5,
-                      fontsize_col = 5,
-                      # k_col=9,
-                      # k_row = 4,
-                      dendrogram = "both",
-                      # row_text_angle = 45,
-                      plot_method = "plotly"
-))
-
-
-
-# save(dds_in, file = "dds_in.Rdat")
-
-
-vol_plot <- function(deSeq_results = NULL, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T){
-  volc.plot <- data.frame(ID = rownames(deSeq_results),
-                          P = deSeq_results$pvalue,
-                          P.adj = deSeq_results$padj,
-                          EffectSize = deSeq_results$log2FoldChange,
-                          threshold = as.factor(deSeq_results$padj <= adj_p)
-                          # comparison = c("TB vs No TB")
-  )
-  
-  volc.plot$threshold <- as.factor(volc.plot$P.adj <= adj_p & abs(volc.plot$EffectSize) >= effect_sizeThresh)
-  
-  
-  # rewrite this, in a rush
-  effect_sizeThresh_2 <- abs(volc.plot[volc.plot$P.adj <= adj_p,]$EffectSize)
-  effect_sizeThresh_2 <- effect_sizeThresh_2[order(abs(effect_sizeThresh_2), decreasing = T)][num_annotate]
-  
-  
-  volc.plot$lab <- ifelse(volc.plot$P.adj <= adj_p & abs(volc.plot$EffectSize) >= effect_sizeThresh_2, as.character(volc.plot$ID), "")
-  
-  volc_DE_1 <- ggplot2::ggplot(data = volc.plot,
-                               ggplot2::aes(x = EffectSize, y = -log10(P),
-                                            colour = threshold, text = ID)) +
-    ggplot2::geom_point(alpha = 0.4, size = 1.75) +
-    # xlim(c(-6, 6)) +
-    ggplot2::xlab("Effect Size") + ggplot2::ylab("-log10 p-value") +
-    ggplot2::theme_bw() +
-    ggplot2::theme(legend.position = "none") +
-    ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
-                   panel.grid.minor = ggplot2::element_blank()) +
-    ggplot2::geom_text(ggplot2::aes(label = volc.plot$lab),
-                       hjust = 0, vjust = 0, colour = "dark grey", size = 2, nudge_x = 0.2)
-  
-  volc_DE_1 <- volc_DE_1 + ggplot2::geom_hline(yintercept = -log10(min(volc.plot$P[volc.plot$P.adj <= adj_p])), colour = "grey", linetype = "longdash") +
-    ggplot2::geom_vline(xintercept = c(-1*effect_sizeThresh, effect_sizeThresh), colour = "grey",linetype = "longdash")
-  # ggplot2::geom_hline(yintercept = -log10(adj_p), colour = "grey", linetype = "longdash") +
-  
-  
-  if (makePlot)
-    return(volc_DE_1)
-  else
-    return(volc.plot)
-  
-}
-
-ggplotly(
+resultsNames(dds_1)
+res_1 <- results(dds_1, contrast = c("Kasugamycin","30","0"))
+v1 <- ggplotly(
   vol_plot(deSeq_results = res_1, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
 )
 
+res_1b <- results(dds_1, contrast = c("Kasugamycin","500","0"))
+v2 <- ggplotly(
+  vol_plot(deSeq_results = res_1b, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
+)
+
+print("0 vs 30 | 0 vs 500")
+subplot(v1,v2, shareY = T)
+
+# 
+
 # 
 # 
 # heatmaply(assay(vst_1_blind)[1:10,],
@@ -422,29 +283,28 @@ ggplotly(
 # )
 ```
 
-
-
-
-
 ## riboSeq
 
-```{r metadata}
-meta <- tibble::tribble(
-                                 ~Filename,     ~Phen, ~Kasugamycin,
-      "NC_1_10_CKDL220001075-1A_HH5FFCCX2",    "NC-1",           0L,
-      "NC_2_10_CKDL220001076-1A_HH5FFCCX2",    "NC-2",           0L,
-  "R30min_1_12_CKDL220001077-1A_HH5FFCCX2", "30min-1",          30L,
-  "R30min_2_10_CKDL220001078-1A_HH5FFCCX2", "30min-2",          30L,
-     "R6h_1_10_CKDL220001079-1A_HH5FFCCX2",    "6h-1",         500L,
-     "R6h_2_10_CKDL220001080-1a_HH5FFCCX2",    "6h-2",         500L
-  )
-```
+Analysis of the riboSeq data. First time doing this kind of analysis, so not 100% sure what I'm doing or looking for, please check if the values I've chose make sense (also in the processing script) and if the analyses are what you need (there are also some plots in the output folders no included here).
 
+```{r data 2, echo=TRUE, message=FALSE, warning=FALSE}
+mn_fld <- paste0(mn_fld, "/ribSeq")
+meta <- tibble::tribble(
+  ~Filename,     ~Phen, ~Kasugamycin,
+  "NC_1_10_CKDL220001075-1A_HH5FFCCX2",    "NC",           0L,
+  "NC_2_10_CKDL220001076-1A_HH5FFCCX2",    "NC",           0L,
+  "R30min_1_12_CKDL220001077-1A_HH5FFCCX2", "30min",          30L,
+  "R30min_2_10_CKDL220001078-1A_HH5FFCCX2", "30min",          30L,
+  "R6h_1_10_CKDL220001079-1A_HH5FFCCX2",    "6h",         500L,
+  "R6h_2_10_CKDL220001080-1a_HH5FFCCX2",    "6h",         500L
+)
+meta$Kasugamycin <- as.factor(meta$Kasugamycin)
+```
 
 ### metagene_profiles
 
-```{r count_metagene_profile}
-files_in <- list.files("/Volumes/space_dandy/riboseq_processed/ribSeq", "*_count_metagene_profile.txt",
+```{r count_metagene_profile, echo=TRUE, message=FALSE, warning=FALSE}
+files_in <- list.files(mn_fld, "*_count_metagene_profile.txt",
                        full.names = T, recursive = T)
 meta_gene <- files_in %>%
   map(read_tsv, col_names = T, show_col_types = F, col_select = "metagene_average", comment = "#") %>%
@@ -459,11 +319,6 @@ meta_gene <- meta_gene %>%
                values_to = "metagene_average") 
 
 # meta_gene[is.na(meta_gene)] <- 0
-
-meta_gene %>% 
-  filter(!is.na(metagene_average)) %>% 
-  plot_ly(x = ~x, y = ~metagene_average, type = 'scatter', mode = 'lines', color = ~Sample) %>% 
-  layout(legend = list(orientation = 'h'))
 
 meta_gene %>% 
   filter(!is.na(metagene_average)) %>% 
@@ -482,33 +337,293 @@ meta_gene %>%
 
 
 
+p1 <- meta_gene %>% 
+    filter(!is.na(metagene_average)) %>% 
+    plot_ly(x = ~x, y = ~metagene_average, type = 'scatter', mode = 'lines', color = ~Sample) %>% 
+    layout(legend = list(orientation = 'h'))
+
+
+
+print("Now leaderless")
+
+files_in_led <- list.files(mn_fld, "*_countled_metagene_profile.txt",
+                           full.names = T, recursive = T)
+meta_gene_led <- files_in_led %>%
+  map(read_tsv, col_names = T, show_col_types = F, col_select = "metagene_average", comment = "#") %>%
+  purrr::reduce(cbind)
+
+colnames(meta_gene_led) <- gsub("_CK.*", "", basename(files_in_led))
+meta_gene_led$x <- c(-50:99)
+
+meta_gene_led <- meta_gene_led %>% 
+  pivot_longer(cols = !x, 
+               names_to = "Sample", 
+               values_to = "metagene_average") 
+
+meta_gene_led$Sample <- paste0(meta_gene_led$Sample, "_leaderless")
+meta_gene_led <- rbind(meta_gene_led, meta_gene)
+
+(p2 <- meta_gene_led %>% 
+    filter(!is.na(metagene_average)) %>% 
+    plot_ly(x = ~x, y = ~metagene_average, type = 'scatter', mode = 'lines', color = ~Sample) %>% 
+    layout(legend = list(orientation = 'h')))
+
+
 ```
-
-
-
 
 ### Deseq
 
+```{r DEseq, echo=TRUE, message=FALSE, warning=FALSE}
+files_in <- list.files(mn_fld, "*_HTSeq.gene.counts.tsv",
+                       full.names = T, recursive = T)
+
+genes <- read_tsv(files_in[1], col_names = F, show_col_types = F, col_select = "X1")
+
+counts <- files_in %>%
+  map(read_tsv, col_names = F, show_col_types = F, col_select = "X2") %>%
+  purrr::reduce(cbind)
+
+colnames(counts) <- gsub("_HTSeq.gene.counts.tsv", "", basename(files_in))
+counts <- cbind(genes, counts)
+
+counts <- counts %>% 
+  dplyr::slice(1:(nrow(genes)-5))
+
+counts %>%
+  dplyr::select(-1) %>% 
+  mutate(n = 1:nrow(counts)) %>%
+  pivot_longer(!n, names_to = "Gene", values_to = "count") %>%
+  plot_ly(x = ~n, y = ~count, type = 'scatter', mode = 'lines', color = ~Gene)
+
+
+# filter those without any counts but do it after selecting groups etc
+counts <- counts[rowSums(counts[-c(1)], na.rm = T) >= 10, ]
+
+gen_names <- counts$X1
+rownames(counts) <- gen_names
+
+counts <- counts %>%
+  dplyr::select(-c(1))
+genes <- NULL
+
+
+
+meta <- meta[match(colnames(counts), meta$Filename), ]
+
+dds_2 <- DESeqDataSetFromMatrix(countData = counts,
+                                colData = meta,
+                                # tidy = T,
+                                design = ~ Kasugamycin) #Cell + TBstatus
+dds_2 <- estimateSizeFactors(dds_2)
+dds_2 <- DESeq(dds_2, parallel = T)
+
+vst_2_blind <- vst(dds_2, blind = T)
+vst_2_blind_cor <- cor(assay(vst_2_blind))
+
+
+
+# Heatmap of all transcripts color by groups ------------------------------------------------
+(hmap_QC_2 <- heatmaply(vst_2_blind_cor,
+                        # symm = T,
+                        col_side_colors = meta$Phen,
+                        row_side_colors = meta$Phen,
+                        hclust_method = "complete",
+                        dist_method = "manhattan",
+                        fontsize_row = 5,
+                        fontsize_col = 5,
+                        # row_text_angle = 45,
+                        plot_method = "plotly"
+) )
+
+
+
+PCA <- dudi.pca(df = t(assay(vst_2_blind)), center = T,
+                scale = T, nf = 2, scannf = FALSE)
+
+p1 <- qplot(data = PCA$l1, x = RS1, y = RS2, colour = meta$Phen)
+p1 <- p1 + stat_ellipse(geom = "polygon", 
+                        level = 0.95,
+                        type = "norm",
+                        alpha = 0.3, aes(fill = meta$Phen)) +
+  stat_ellipse(type = "euclid", linetype = 2, alpha = 0.3) # level = 0.2)
+
+
+pca_sum <- factoextra::get_eigenvalue(PCA)
+
+p1 <- ggplotly(p1 +
+                 # labs(title = title) + #, subtitle = "A subtitle"
+                 xlab(label = paste("PC1", "(", round(pca_sum$variance.percent[1], 0), "%)")) +
+                 ylab(label =  paste("PC2", "(", round(pca_sum$variance.percent[2], 0), "%)")
+                 )
+) %>% 
+  layout(
+    legend = list(
+      orientation = 'h',
+      y=-0.15)
+  )
+p1 
+
+
+
+# Corr heatmap ---------------
+(hp_corr <- heatmaply(vst_2_blind_cor,
+                      symm = T,
+                      col_side_colors = meta$Phen,
+                      row_side_colors = meta$Phen,
+                      hclust_method = "complete",
+                      dist_method = "euclidean", #"manhattan",
+                      fontsize_row = 5,
+                      fontsize_col = 5,
+                      # k_col=9,
+                      # k_row = 4,
+                      dendrogram = "both",
+                      # row_text_angle = 45,
+                      plot_method = "plotly"
+))
+
+
+
+# save(dds_in, file = "dds_in.Rdat")
+
+
+resultsNames(dds_2)
+res_2 <- results(dds_2, contrast = c("Kasugamycin","30","0"))
+v1 <- ggplotly(
+  vol_plot(deSeq_results = res_2, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
+)
+
+res_2b <- results(dds_1, contrast = c("Kasugamycin","500","0"))
+v2 <- ggplotly(
+  vol_plot(deSeq_results = res_2b, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
+)
+
+print("0 vs 30 | 0 vs 500")
+subplot(v1,v2, shareY = T)
+
+# 
+# 
+# heatmaply(assay(vst_1_blind)[1:10,],
+#           # col_side_colors = colnames(vst_1_blind),
+#           # row_side_colors = meta$phen,
+#           hclust_method = "complete",
+#           dist_method = "manhattan",
+#           fontsize_row = 5,
+#           fontsize_col = 5,
+#           # row_text_angle = 45,
+#           plot_method = "plotly"
+# )
+
+
+
+res_1a <- data.frame(ID = rownames(res_1),
+                     RNAseq = res_1$log2FoldChange,
+                     threshold_RNA = res_1$padj <= 0.05
+)
+
+res_2a <- data.frame(ID = rownames(res_2),
+                     RiboSeq = res_2$log2FoldChange,
+                     threshold_Ribo = res_2$padj <= 0.05
+)
+
+rna_rib <- res_1a %>% 
+  left_join(res_2a) %>% 
+  drop_na
+
+
+rna_rib$threshold <- ifelse(
+  rna_rib$threshold_RNA & rna_rib$threshold_Ribo, "Both",
+  ifelse(rna_rib$threshold_RNA, "RNA",
+         ifelse(rna_rib$threshold_Ribo, "Ribo",
+                "None"
+         )))
+
+plt_rna_rib_a <- rna_rib %>% 
+  plot_ly(x = ~RNAseq, y = ~RiboSeq, color = ~threshold, text = ~ID, legendgroup = ~ID,
+          hovertemplate = paste(
+            "<b>Gene: </b>%{text}<br>",
+            "<b>RNAseq: </b>%{x}<br>",
+            "<b>RiboSeq: </b>%{y}<br>"
+          )
+  ) %>% 
+  layout(legend=list(title=list(text='<b> Significant </b>')))
+
+
+
+
+
+
+res_1ba <- data.frame(ID = rownames(res_1b),
+                      RNAseq = res_1$log2FoldChange,
+                      threshold_RNA = res_1$padj <= 0.05
+)
+
+res_2ba <- data.frame(ID = rownames(res_2b),
+                      RiboSeq = res_2b$log2FoldChange,
+                      threshold_Ribo = res_2b$padj <= 0.05
+)
+
+rna_rib_b <- res_1ba %>% 
+  left_join(res_2ba) %>% 
+  drop_na
+
+
+rna_rib_b$threshold <- ifelse(
+  rna_rib_b$threshold_RNA & rna_rib_b$threshold_Ribo, "Both",
+  ifelse(rna_rib_b$threshold_RNA, "RNA",
+         ifelse(rna_rib_b$threshold_Ribo, "Ribo",
+                "None"
+         )))
+
+plt_rna_rib_b <- rna_rib_b %>% 
+  plot_ly(x = ~RNAseq, y = ~RiboSeq, color = ~threshold, text = ~ID, legendgroup = ~ID,
+          hovertemplate = paste(
+            "<b>Gene: </b>%{text}<br>",
+            "<b>RNAseq: </b>%{x}<br>",
+            "<b>RiboSeq: </b>%{y}<br>"
+          )
+  ) %>% 
+  layout(legend=list(title=list(text='<b> Significant </b>')))
+
+
+
+subplot(plt_rna_rib_a, plt_rna_rib_b, nrows = 2)
+
+
+
+
+colnames(rna_rib)[-1] <- paste0(colnames(rna_rib), "_30")[-1] 
+colnames(rna_rib_b)[-1] <- paste0(colnames(rna_rib_b), "_500")[-1]
+
+rna_rib %>% 
+  left_join(rna_rib_b) %>% 
+  datatable()
+
+
+
+
+
+```
 
 ### systemPipeR
-```{r systemPipeR}
+
+```{r systemPipeR, echo=TRUE, message=FALSE, warning=FALSE}
 gtf_file <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
 txdb <- GenomicFeatures::makeTxDbFromGFF(file = gtf_file)
 feat <- genFeatures(txdb, featuretype = c("promoter", "cds", "intergenic"), reduce_ranges = TRUE,
                     upstream = 50, downstream = 100, verbose = TRUE)
 
 
-bam_path <- list.files("/Volumes/space_dandy/riboseq_processed/ribSeq/", "*.bam$",
+bam_path <- list.files(mn_fld, "*.bam$",
                        full.names = T, recursive = T)
 (bf <- BamFileList(bam_path))
 
 fc <- systemPipeR::featuretypeCounts(bfl = bf,
-                        grl = feat, singleEnd = TRUE, readlength = NULL, type = "data.frame")
+                                     grl = feat, singleEnd = TRUE, readlength = NULL, type = "data.frame")
 
 
-p <- plotfeaturetypeCounts(x = fc, graphicsfile = "~/Downloads/riboDelete/featureCounts.png",
-                           graphicsformat = "png", scales = "fixed", anyreadlength = TRUE,
-                           scale_length_val = NULL)
+plotfeaturetypeCounts(x = fc, graphicsfile = paste0(mn_fld, "featureCounts.png"),
+                      graphicsformat = "png", scales = "fixed", anyreadlength = TRUE,
+                      scale_length_val = NULL)
 
 
 # feat2 <- cdsBy(txdb, "tx")
@@ -531,70 +646,83 @@ p <- plotfeaturetypeCounts(x = fc, graphicsfile = "~/Downloads/riboDelete/featur
 
 ```
 
-
 ### psites
 
-```{r psite}
-bam_path <- list.files("/Volumes/space_dandy/riboseq_processed/ribSeq/", "*.bam$",
-                       full.names = T, recursive = T)
-gtf <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
-
-classlabel <- data.frame(condition = c("mutant",  "wildtype"), comparison = c(2, 1))
-
-# https://bioconductor.org/packages/devel/bioc/vignettes/RiboDiPA/inst/doc/RiboDiPA.html#p-site-mapping
-## Perform individual P-site mapping procedure
-data.psite <- psiteMapping(bam_file_list = bam_path, 
-                           gtf_file = gtf, psite.mapping = "auto", cores = 5)
-
-## P-site mapping offset rule generated
-data.psite$psite.mapping
-
-# ## Use user specified psite mapping offset rule
-# offsets <- cbind(qwidth = c(28, 29, 30, 31, 32), 
-#                  psite = c(18, 18, 18, 19, 19))
-# data.psite2 <- psiteMapping(bam_path[1:4], bam_path[5], 
-#                             psite.mapping = offsets, cores = 2)
-
-
-## Merge the P-site data into bins with a fixed or an adaptive width
-data.binned <- dataBinning(data = data.psite$coverage, bin.width = 0, 
-                           zero.omit = FALSE, bin.from.5UTR = TRUE, cores = 2)
-
-## Merge the P-site data on each codon
-data.codon <- dataBinning(data = data.psite$coverage, bin.width = 1, 
-                          zero.omit = FALSE, bin.from.5UTR = TRUE, cores = 2)
-
-## Merge the P-site data on each exon and perform differential pattern analysis
-result.exon <- diffPatternTestExon(psitemap = data.psite, 
-                                   classlabel = classlabel, method = c('gtxr', 'qvalue'))
-
-## Perform differential pattern analysis
-result.pst <- diffPatternTest(data = data.binned, 
-                              classlabel = classlabel, method=c('gtxr', 'qvalue'))
-
-
+```{r psite, echo=TRUE, message=FALSE, warning=FALSE}
+if (F){
+  bam_path <- list.files(mn_fld, "*.bam$",
+                         full.names = T, recursive = T)
+  gtf <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
+  
+  classlabel <- data.frame(condition = as.factor(meta$Kasugamycin[match(meta$Filename, gsub(".bam", "", basename(bam_path)))]),
+                           comparison = c(1,1,2,2,2,2))
+  
+  # https://bioconductor.org/packages/devel/bioc/vignettes/RiboDiPA/inst/doc/RiboDiPA.html#p-site-mapping
+  ## Perform individual P-site mapping procedure
+  data.psite <- psiteMapping(bam_file_list = bam_path, 
+                             gtf_file = gtf, psite.mapping = "auto", cores = 5)
+  
+  ## P-site mapping offset rule generated
+  data.psite$psite.mapping
+  
+  # ## Use user specified psite mapping offset rule
+  # offsets <- cbind(qwidth = c(28, 29, 30, 31, 32), 
+  #                  psite = c(18, 18, 18, 19, 19))
+  # data.psite2 <- psiteMapping(bam_path[1:4], bam_path[5], 
+  #                             psite.mapping = offsets, cores = 2)
+  
+  
+  ## Merge the P-site data into bins with a fixed or an adaptive width
+  data.binned <- dataBinning(data = data.psite$coverage, bin.width = 0, 
+                             zero.omit = FALSE, bin.from.5UTR = TRUE, cores = 5)
+  
+  ## Merge the P-site data on each codon
+  data.codon <- dataBinning(data = data.psite$coverage, bin.width = 1, 
+                            zero.omit = FALSE, bin.from.5UTR = TRUE, cores = 5)
+  
+  ## Merge the P-site data on each exon and perform differential pattern analysis
+  result.exon <- diffPatternTestExon(psitemap = data.psite, 
+                                     classlabel = classlabel, method = c('gtxr', 'qvalue'))
+  
+  ## Perform differential pattern analysis
+  result.pst <- diffPatternTest(data = data.binned, 
+                                classlabel = classlabel, method=c('bonferroni', 'qvalue'))
+  save.image(file = paste0(mn_fld, "/psite.RData"))
+  
+}else{
+  load(paste0(mn_fld, "/psite.RData"))
+}
 ## Plot ribosome per nucleotide tracks of specified genes.
-plotTrack(data = data.psite, genes.list = c("YDR050C", "YDR064W"),
-          replicates = NULL, exons = FALSE)
+print("jsut and example, you can print all the significant ones, or look at those you want.
+      I'll write some code to conver to a table so you can filter and look for the top genes")
+gn_list <- c("trpG")
+plotTrack(data = data.psite, 
+          genes.list = gn_list,
+          replicates = NULL, 
+          exons = FALSE)
 
-## Plot binned ribosome tracks of siginificant genes: YDR086C and YDR210W.
+## Plot binned ribosome tracks of siginificant gene
 ## you can specify the thrshold to redefine the significant level
-plotTest(result = result.pst, genes.list = NULL, threshold = 0.05) 
+
+# ldrlss <- readxl::read_xlsx("/Users/SemiQuant/Bioinformatics/Projects/riri/analysis/Leaderless genes mtb.xlsx", col_names = F)[,,1]
+# select genes
+# ldrlss[1:3]
+
+plotTest(result = result.pst, 
+         genes.list = "trpG", 
+         threshold = 0.05)
 
 ```
 
-
-
-## GRAVEYAARD
 <!-- Not working with current alignment method -->
 
-```{r}
+```{r GRAVEYARD, eval=FALSE, include=FALSE, message=FALSE, warning=FALSE}
 require(tidyverse)
 require(riboWaltz)
 # browseVignettes("riboWaltz")
 
 gtf_file <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gtf_5p.gtf"
-bam_path <- "/Users/SemiQuant/Downloads/riboDelete"
+bam_path <- mn_fld
 
 
 annotation_dt <- create_annotation(gtfpath = gtf_file)
@@ -605,7 +733,8 @@ gtf <- as.data.frame(gtf)
 annots <- gtf %>% 
   select(locus_tag, transcript_id) %>% 
   unique
-annots <- annots[match(annotation_dt$transcript, annots$transcript_id),]
+# annots <- annots[match(annotation_dt$transcript, annots$transcript_id),]
+annots <- annots[match(annots$transcript_id, annotation_dt$transcript),]
 table(annotation_dt$transcript == annots$transcript_id)
 # annotation_dt$transcript <- annots$transcript_id
 
