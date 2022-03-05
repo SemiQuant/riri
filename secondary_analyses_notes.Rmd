@@ -428,28 +428,88 @@ ggplotly(
 
 ## riboSeq
 
+```{r metadata}
+meta <- tibble::tribble(
+                                 ~Filename,     ~Phen, ~Kasugamycin,
+      "NC_1_10_CKDL220001075-1A_HH5FFCCX2",    "NC-1",           0L,
+      "NC_2_10_CKDL220001076-1A_HH5FFCCX2",    "NC-2",           0L,
+  "R30min_1_12_CKDL220001077-1A_HH5FFCCX2", "30min-1",          30L,
+  "R30min_2_10_CKDL220001078-1A_HH5FFCCX2", "30min-2",          30L,
+     "R6h_1_10_CKDL220001079-1A_HH5FFCCX2",    "6h-1",         500L,
+     "R6h_2_10_CKDL220001080-1a_HH5FFCCX2",    "6h-2",         500L
+  )
+```
+
+
+### metagene_profiles
+
+```{r count_metagene_profile}
+files_in <- list.files("/Volumes/space_dandy/riboseq_processed/ribSeq", "*_count_metagene_profile.txt",
+                       full.names = T, recursive = T)
+meta_gene <- files_in %>%
+  map(read_tsv, col_names = T, show_col_types = F, col_select = "metagene_average", comment = "#") %>%
+  purrr::reduce(cbind)
+
+colnames(meta_gene) <- gsub("_CK.*", "", basename(files_in))
+meta_gene$x <- c(-50:99)
+
+meta_gene <- meta_gene %>% 
+  pivot_longer(cols = !x, 
+               names_to = "Sample", 
+               values_to = "metagene_average") 
+
+# meta_gene[is.na(meta_gene)] <- 0
+
+meta_gene %>% 
+  filter(!is.na(metagene_average)) %>% 
+  plot_ly(x = ~x, y = ~metagene_average, type = 'scatter', mode = 'lines', color = ~Sample) %>% 
+  layout(legend = list(orientation = 'h'))
+
+meta_gene %>% 
+  filter(!is.na(metagene_average)) %>% 
+  pivot_wider(names_from = Sample,
+              values_from = metagene_average
+  ) %>% 
+  dplyr::select(-x) %>% 
+  heatmaply(#row_side_colors = .colnames(),
+    hclust_method = "complete",
+    dist_method = "manhattan",
+    fontsize_row = 5,
+    fontsize_col = 5,
+    # row_text_angle = 45,
+    plot_method = "plotly"
+  ) 
+
+
+
+```
+
+
+
+
 ### Deseq
 
 
 ### systemPipeR
-
 ```{r systemPipeR}
 gtf_file <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
-txdb <- makeTxDbFromGFF(file = gtf_file)
-feat <- genFeatures(txdb, featuretype = "all", reduce_ranges = TRUE,
-                    upstream = 50, downstream = 50, verbose = TRUE)
+txdb <- GenomicFeatures::makeTxDbFromGFF(file = gtf_file)
+feat <- genFeatures(txdb, featuretype = c("promoter", "cds", "intergenic"), reduce_ranges = TRUE,
+                    upstream = 50, downstream = 100, verbose = TRUE)
 
 
-bam_path <- "/Users/SemiQuant/Downloads/riboDelete/riboSeq_R1.bam"
+bam_path <- list.files("/Volumes/space_dandy/riboseq_processed/ribSeq/", "*.bam$",
+                       full.names = T, recursive = T)
 (bf <- BamFileList(bam_path))
 
-fc <- featuretypeCounts(bfl = bf,
+fc <- systemPipeR::featuretypeCounts(bfl = bf,
                         grl = feat, singleEnd = TRUE, readlength = NULL, type = "data.frame")
 
 
 p <- plotfeaturetypeCounts(x = fc, graphicsfile = "~/Downloads/riboDelete/featureCounts.png",
                            graphicsformat = "png", scales = "fixed", anyreadlength = TRUE,
                            scale_length_val = NULL)
+
 
 # feat2 <- cdsBy(txdb, "tx")
 # 
@@ -475,8 +535,8 @@ p <- plotfeaturetypeCounts(x = fc, graphicsfile = "~/Downloads/riboDelete/featur
 ### psites
 
 ```{r psite}
-require(RiboDiPA)
-bam_path <- list.files(pattern = ".bam$", "/Users/SemiQuant/Downloads/riboDelete/riboSeq_R1_riri", full.names = T)
+bam_path <- list.files("/Volumes/space_dandy/riboseq_processed/ribSeq/", "*.bam$",
+                       full.names = T, recursive = T)
 gtf <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
 
 classlabel <- data.frame(condition = c("mutant",  "wildtype"), comparison = c(2, 1))
@@ -523,45 +583,6 @@ plotTest(result = result.pst, genes.list = NULL, threshold = 0.05)
 
 ```
 
-### metagene_profiles
-
-```{r count_metagene_profile}
-
-nme="test"
-
-f <- "/Users/SemiQuant/Downloads/riboDelete/test_count_metagene_profile.txt"
-cnt <- read_tsv(f, comment = "#")
-cnt$Sample <- "S1"
-
-cnt2 <- cnt
-cnt2$Sample <- "S2"
-cnt <- rbind(cnt, cnt2)
-
-
-
-
-# do this for all samples together
-cnt %>% 
-  filter(!is.na(metagene_average)) %>% 
-  plot_ly(x = ~x, y = ~metagene_average, type = 'scatter', mode = 'lines', color = ~Sample)
-
-cnt %>% 
-  filter(!is.na(metagene_average)) %>% 
-  dplyr::select(-regions_counted) %>% 
-  pivot_wider(names_from = Sample,
-              values_from = metagene_average
-              ) %>% 
-  dplyr::select(-x) %>% 
-heatmaply(#row_side_colors = .colnames(),
-          hclust_method = "complete",
-          dist_method = "manhattan",
-          fontsize_row = 5,
-          fontsize_col = 5,
-          # row_text_angle = 45,
-          plot_method = "plotly"
-) 
-
-```
 
 
 ## GRAVEYAARD
