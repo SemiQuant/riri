@@ -26,6 +26,7 @@ usage () {
   -mn|--min_len (defult = 24)
   -mx|--max_len (defult = 36)
   -ms|--mask = mask stable RNAs in reference instead of prealigning?
+  -u|--umi = UMI sequence if present #GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA
   "
 }
 
@@ -90,6 +91,10 @@ cut_adapt="$2"
 -ms|--mask)
 msk_or_rem="mask"
 ;;
+-u|--umi)
+umi="$2"
+;;
+
 
 esac
 shift
@@ -287,20 +292,42 @@ then
   reads="${reads}_cleaned.fq"
 fi
 
+
+if [ ! -z "$umi" ]
+then
+    umi_tools extract --stdin="$reads" \
+      --bc-pattern=GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA \
+      --log="${nme}_processed.log" \
+      --stdout "${nme}_UMI.fastq.gz"
+    reads="${nme}_UMI.fastq.gz"
+fi
+
+
 bowtie --threads $threads -S --seed 1987 -x "$ref" -q "$reads" -m 5 --best --strata -a -v $max_missmatch "${out_dir}/${nme}.sam"
 samtools view -bS "${out_dir}/${nme}.sam" | samtools sort -@ $threads -O "bam" -T "working" -o "${out_dir}/${nme}.bam"
-samtools index "${out_dir}/${nme}.bam"
+bam="${out_dir}/${nme}.bam"
+
+if [ ! -z "$umi" ]
+then
+    umi_tools dedup -I "$bam" --output-stats="${out_dir}/${nme}.deduplicated" -S "${out_dir}/${nme}.deduplicated.bam"
+    # sort?
+    samtools sort -@ $threads -O "bam" -T "working" -o "${out_dir}/${nme}.deduplicated.sorted.bam" "${out_dir}/${nme}.deduplicated.bam"
+    rm "${out_dir}/${nme}.deduplicated.bam"
+    bam="${out_dir}/${nme}.deduplicated.sorted.bam"
+fi
+
+samtools index "$bam"
 rm "${out_dir}/${nme}.sam"
-samtools flagstat "${out_dir}/${nme}.bam" > "${out_dir}/${nme}.flagstat"
+samtools flagstat "$bam" > "${out_dir}/${nme}.flagstat"
 
 # count alignments
 echo "HtSeq started"
 htseq-count --nprocesses $threads --type "gene" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
-  --minaqual 10 --nonunique none -f bam "${out_dir}/${nme}.bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.gene.counts.tsv"
+  --minaqual 10 --nonunique none -f bam "$bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.gene.counts.tsv"
 
 
 htseq-count --nprocesses $threads --type "CDS" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
-  --minaqual 10 --nonunique none -f bam "${out_dir}/${nme}.bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.CDS.counts.tsv"
+  --minaqual 10 --nonunique none -f bam "$bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.CDS.counts.tsv"
 
 
 
@@ -315,7 +342,7 @@ else
 fi
 
 featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "gene" -g "Name" -O -Q 5 \
-  --ignoreDup -T $threads -a "$gtf" "$fCount" -o "${out_dir}/${nme}_featCount.counts" "${out_dir}/${nme}.bam"
+  --ignoreDup -T $threads -a "$gtf" "$fCount" -o "${out_dir}/${nme}_featCount.counts" "$bam"
 
 
 # 5′ mapped sites of RPFs
@@ -356,7 +383,7 @@ featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "gene" -g "Name" -O -Q 5 \
 #     --landmark cds_start \
 #     --annotation_files NC_000962.gtf
 phase_by_size "${ref/.f*/_rois.txt}" "${nme}_phase_by_size" \
-  --count_files "${out_dir}/${nme}.bam" \
+  --count_files "$bam" \
   --fiveprime \
   --offset 14 \
   --codon_buffer 5 \
@@ -366,7 +393,7 @@ phase_by_size "${ref/.f*/_rois.txt}" "${nme}_phase_by_size" \
 mkdir "${out_dir}/count_vectors"
 get_count_vectors --annotation_files "${ref/.f*/_rois.bed}" \
   --annotation_format BED \
-  --count_files "${out_dir}/${nme}.bam" \
+  --count_files "$bam" \
   --fiveprime \
   --offset 14 \
   --min_length $min_len \
@@ -409,7 +436,7 @@ rm -r "${out_dir}/count_vectors"
 # '''
 
 metagene count "${ref/.f*/_rois.txt}" "${nme}_count" \
-  --count_files "${out_dir}/${nme}.bam" \
+  --count_files "$bam" \
   --fiveprime --offset 14 --normalize_over 30 200 \
   --min_counts 20 --cmap Blues
 
