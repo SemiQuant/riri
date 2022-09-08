@@ -1,7 +1,7 @@
 ---
-title: "RiboSeek Anlaysis v5"
+title: "RiboSeek Anlaysis v6b"
 author: "SemiQuant"
-date: "20220330"
+date: "20220623"
 output: html_document
 ---
 
@@ -43,7 +43,6 @@ require(riboSeqR)
 require(systemPipeR)
 require(RiboDiPA)
 require(riboWaltz)
-require(xtail)
 require(GenomicFeatures)
 require(grid)
 require(DESeq2)
@@ -193,7 +192,7 @@ dds_1 <- DESeqDataSetFromMatrix(countData = counts,
                                 design = ~ Kasugamycin) #Cell + TBstatus
 dds_1 <- estimateSizeFactors(dds_1)
 dds_1 <- DESeq(dds_1, parallel = T)
-res_1 <- results(dds_1)
+res_1 <- DESeq2::results(dds_1)
 
 vst_1_blind <- vst(dds_1, blind = T)
 vst_1_blind_cor <- cor(assay(vst_1_blind))
@@ -263,12 +262,12 @@ p1
 
 # save(dds_in, file = "dds_in.Rdat")
 resultsNames(dds_1)
-res_1 <- results(dds_1, contrast = c("Kasugamycin","30","0"))
+res_1 <- DESeq2::results(dds_1, contrast = c("Kasugamycin","30","0"))
 v1 <- ggplotly(
   vol_plot(deSeq_results = res_1, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
 )
 
-res_1b <- results(dds_1, contrast = c("Kasugamycin","500","0"))
+res_1b <- DESeq2::results(dds_1, contrast = c("Kasugamycin","500","0"))
 v2 <- ggplotly(
   vol_plot(deSeq_results = res_1b, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
 )
@@ -583,12 +582,12 @@ p1
 
 
 resultsNames(dds_2)
-res_2 <- results(dds_2, contrast = c("Kasugamycin","30","0"))
+res_2 <- DESeq2::results(dds_2, contrast = c("Kasugamycin","30","0"))
 v1 <- ggplotly(
   vol_plot(deSeq_results = res_2, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
 )
 
-res_2b <- results(dds_2, contrast = c("Kasugamycin","500","0"))
+res_2b <- DESeq2::results(dds_2, contrast = c("Kasugamycin","500","0"))
 v2 <- ggplotly(
   vol_plot(deSeq_results = res_2b, adj_p = 0.05, num_annotate = 10, effect_sizeThresh = 2, makePlot = T)
 )
@@ -810,7 +809,6 @@ if (F){
 
 result.pst$gene %>% 
   datatable(extensions = 'Buttons',
-          
           options = list(
             paging = TRUE,
             searching = TRUE,
@@ -825,11 +823,11 @@ result.pst$gene %>%
 print("jsut and example, you can print all the significant ones, or look at those you want.
       I'll write some code to conver to a table so you can filter and look for the top genes")
 gn_list <- c("esxV", "esxI")
-plotTrack(data = data.psite, 
+try(plotTrack(data = data.psite, 
           genes.list = gn_list,
           replicates = NULL, 
           exons = FALSE)
-
+)
 ## Plot binned ribosome tracks of siginificant gene
 ## you can specify the thrshold to redefine the significant level
 
@@ -909,6 +907,9 @@ cnts <- list(RPFs = get_counts("/Users/SemiQuant/Bioinformatics/Projects/riri/an
              annotation = feat)
 
 
+table(rownames(cnts$mRNA)%in%cnts$annotation$GeneID)
+cnts$annotation <- cnts$annotation[cnts$annotation$GeneID%in% rownames(cnts$RPFs)& cnts$annotation$GeneID %in% rownames(cnts$mRNA),]
+
 
 cnts$RPFs <- cnts$RPFs[match(cnts$annotation$GeneID, rownames(cnts$RPFs)), ]
 cnts$RPFs[is.na(cnts$RPFs)] <- 0
@@ -932,7 +933,7 @@ TE <- translationalEfficiency(fpkm)
 
 
 # change this to read from the metadata table
-gp <- c("NT", "NT", "30m", "30m", "6h", "6h")
+gp <- as.factor(c("NT", "NT", "30m", "30m", "6h", "6h"))
 TE.log2 <- log2(TE$TE + 1)
 colnames(TE.log2) <- gp
 #plot(TE.log2[, 1], TE.log2[, 3], 
@@ -954,6 +955,8 @@ topTable(fit2, number=4000) %>%
             dom = 'tBp',
             buttons = c('copy', 'csv', 'excel')
           ))
+
+
 
 
 # Maximum N-mer translational efficiency
@@ -1127,7 +1130,7 @@ subplot(te_1, te_2, shareY = T)
 
 ### Use raw counts to test whether the change is coming from translation level but not transcription level.
 
-Here we are using a likelihood ratio test to see if a change is occuring at the translation level but not transcription level, not sure how to explain that better, but we are fitting a negative binomial generalized log-linear model to the read counts for each gene.
+Here we are using a likelihood ratio test to see if a change is occurring at the translation level but not transcription level, not sure how to explain that better, but we are fitting a negative binomial generalized log-linear model to the read counts for each gene.
 
 ```{r DTE2, echo=TRUE, message=FALSE, warning=FALSE}
 cnts_30 <- cnts
@@ -1135,8 +1138,8 @@ cnts_30$RPFs <- cnts_30$RPFs[c(1,2,3,4)]
 cnts_30$mRNA <- cnts_30$mRNA[c(1,2,3,4)]
 
 # change this to read from the metadata table
-gp <- c("NT", "NT", "30", "30")
-design <- model.matrix(~0 + as.factor(gp))
+gp <- as.factor(c("NT", "NT", "30", "30"))
+design <- model.matrix(~0 + gp)
 colnames(design) <- sub("gp", "", colnames(design))
 y <- lapply(cnts_30[c("RPFs", "mRNA")], function(.cnt){
   .y <- DGEList(counts = .cnt,
@@ -1150,7 +1153,7 @@ y <- lapply(cnts_30[c("RPFs", "mRNA")], function(.cnt){
 fit <- lapply(y, glmFit, design = design)
 lrt <- lapply(fit, glmLRT)
 
-results <- lapply(lrt, topTags)
+results <- lapply(lrt, topTags, p.value = 0.05, n = nrow(lrt[[1]]))
 RPFs_unique <- setdiff(rownames(results[["RPFs"]]),
                        rownames(results[["mRNA"]]))
 mRNA_zero <- rownames(cnts_30[["mRNA"]])[rowSums(cnts_30[["mRNA"]]) == 0]
@@ -1177,7 +1180,7 @@ cnts_6$RPFs <- cnts_6$RPFs[c(1,2,5,6)]
 cnts_6$mRNA <- cnts_6$mRNA[c(1,2,5,6)]
 
 # change this to read from the metadata table
-gp <- c("NT", "NT", "66", "6")
+gp <- as.factor(c("NT", "NT", "6", "6"))
 design <- model.matrix(~0 + gp)
 colnames(design) <- sub("gp", "", colnames(design))
 y <- lapply(cnts_6[c("RPFs", "mRNA")], function(.cnt){
@@ -1194,7 +1197,7 @@ y <- lapply(cnts_6[c("RPFs", "mRNA")], function(.cnt){
 fit <- lapply(y, glmFit, design = design)
 lrt <- lapply(fit, glmLRT)
 
-results <- lapply(lrt, topTags)
+results <- lapply(lrt, topTags, p.value = 0.05, n = nrow(lrt[[1]]))
 RPFs_unique <- setdiff(rownames(results[["RPFs"]]),
                        rownames(results[["mRNA"]]))
 mRNA_zero <- rownames(cnts_6[["mRNA"]])[rowSums(cnts_6[["mRNA"]]) == 0]
@@ -1360,6 +1363,10 @@ cnts <- list(RPFs = get_counts("/Users/SemiQuant/Bioinformatics/Projects/riri/an
 
 
 
+
+table(rownames(cnts$mRNA)%in%cnts$annotation$GeneID)
+cnts$annotation <- cnts$annotation[cnts$annotation$GeneID%in% rownames(cnts$RPFs)& cnts$annotation$GeneID %in% rownames(cnts$mRNA),]
+
 cnts$RPFs <- cnts$RPFs[match(cnts$annotation$GeneID, rownames(cnts$RPFs)), ]
 cnts$RPFs[is.na(cnts$RPFs)] <- 0
 table(cnts$annotation$GeneID==rownames(cnts$RPFs))
@@ -1369,6 +1376,8 @@ cnts$mRNA <- cnts$mRNA[match(cnts$annotation$GeneID, rownames(cnts$mRNA)), ]
 cnts$mRNA[is.na(cnts$mRNA)] <- 0
 table(cnts$annotation$GeneID==rownames(cnts$mRNA))
 rownames(cnts$mRNA) <- cnts$annotation$GeneID
+
+
 
 
 cbind(colnames(cnts$RPFs), colnames(cnts$mRNA))
@@ -1381,7 +1390,7 @@ TE <- translationalEfficiency(fpkm)
 
 
 # change this to read from the metadata table
-gp <- c("NT", "NT", "30m", "30m")
+gp <- as.factor(c("NT", "NT", "30m", "30m"))
 # gp <- c("NT", "NT", "30m", "30m", "6h", "6h")
 TE.log2 <- log2(TE$TE + 1)[c(1:4)]
 
@@ -1403,6 +1412,35 @@ topTable(fit3, number=4000) %>%
             ))
 
 
+
+
+print("volcano of above table [i think]")
+volc <- topTable(fit3, number=4000)
+volc$EffectSize <- volc[,1]-volc[,2]
+volc$threshold <- as.factor(volc$adj.P.Val <= 0.05 & abs(volc$EffectSize) >= 1.2)
+effect_sizeThresh_2 <- abs(volc[volc$adj.P.Val <= 0.05,]$EffectSize)
+effect_sizeThresh_2 <- effect_sizeThresh_2[order(abs(effect_sizeThresh_2), decreasing = T)][20]
+volc$ID <- rownames(volc)
+volc$lab <- ifelse(volc$adj.P.Val <= 0.05 & abs(volc$EffectSize) >= effect_sizeThresh_2, as.character(volc$ID), "")
+
+
+volc_DE_1 <- ggplot2::ggplot(data = volc,
+                             ggplot2::aes(x = EffectSize, y = -log10(P.Value),
+                                          colour = threshold, text = ID)) +
+  ggplot2::geom_point(alpha = 0.4, size = 1.75) +
+  ggplot2::xlab("Effect Size") + ggplot2::ylab("-log10 p-value") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.position = "none") +
+  ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                 panel.grid.minor = ggplot2::element_blank()) +
+  ggplot2::geom_text(ggplot2::aes(label = volc$lab),
+                     hjust = 0, vjust = 0, colour = "dark grey", size = 2, nudge_x = 0.2) +
+  ggplot2::geom_hline(yintercept = -log10(max(volc$P.Value[volc$adj.P.Val <= 0.05])), colour = "grey", linetype = "longdash") +
+  ggplot2::geom_vline(xintercept = c(-1*1.2, 1.2), colour = "grey",linetype = "longdash")
+
+volc30 <- volc_DE_1
+print("values are NT - trt")
+volc30
 
 
 ```
@@ -1428,6 +1466,11 @@ cnts <- list(RPFs = get_counts("/Users/SemiQuant/Bioinformatics/Projects/riri/an
 
 
 
+
+
+table(rownames(cnts$mRNA)%in%cnts$annotation$GeneID)
+cnts$annotation <- cnts$annotation[cnts$annotation$GeneID%in% rownames(cnts$RPFs)& cnts$annotation$GeneID %in% rownames(cnts$mRNA),]
+
 cnts$RPFs <- cnts$RPFs[match(cnts$annotation$GeneID, rownames(cnts$RPFs)), ]
 cnts$RPFs[is.na(cnts$RPFs)] <- 0
 table(cnts$annotation$GeneID==rownames(cnts$RPFs))
@@ -1437,6 +1480,7 @@ cnts$mRNA <- cnts$mRNA[match(cnts$annotation$GeneID, rownames(cnts$mRNA)), ]
 cnts$mRNA[is.na(cnts$mRNA)] <- 0
 table(cnts$annotation$GeneID==rownames(cnts$mRNA))
 rownames(cnts$mRNA) <- cnts$annotation$GeneID
+
 
 
 cbind(colnames(cnts$RPFs), colnames(cnts$mRNA))
@@ -1449,7 +1493,7 @@ TE <- translationalEfficiency(fpkm)
 
 
 # change this to read from the metadata table
-gp <- c("NT", "NT", "6h", "6h")
+gp <- as.factor(c("NT", "NT", "6h", "6h"))
 TE.log2 <- log2(TE$TE + 1)[c(1,2,5,6)]
 
 design <- model.matrix(~0 + gp)
@@ -1472,10 +1516,256 @@ topTable(fit4, number=4000) %>%
 
 
 
+print("volcano of above table [i think]")
+volc <- topTable(fit4, number=4000)
+volc$EffectSize <- volc[,1]-volc[,2]
+volc$threshold <- as.factor(volc$adj.P.Val <= 0.05 & abs(volc$EffectSize) >= 1.2)
+effect_sizeThresh_2 <- abs(volc[volc$adj.P.Val <= 0.05,]$EffectSize)
+effect_sizeThresh_2 <- effect_sizeThresh_2[order(abs(effect_sizeThresh_2), decreasing = T)][20]
+volc$ID <- rownames(volc)
+volc$lab <- ifelse(volc$adj.P.Val <= 0.05 & abs(volc$EffectSize) >= effect_sizeThresh_2, as.character(volc$ID), "")
+
+
+volc_DE_1 <- ggplot2::ggplot(data = volc,
+                             ggplot2::aes(x = EffectSize, y = -log10(P.Value),
+                                          colour = threshold, text = ID)) +
+  ggplot2::geom_point(alpha = 0.4, size = 1.75) +
+  ggplot2::xlab("Effect Size") + ggplot2::ylab("-log10 p-value") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.position = "none") +
+  ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                 panel.grid.minor = ggplot2::element_blank()) +
+  ggplot2::geom_text(ggplot2::aes(label = volc$lab),
+                     hjust = 0, vjust = 0, colour = "dark grey", size = 2, nudge_x = 0.2) + 
+  ggplot2::geom_hline(yintercept = -log10(max(volc$P.Value[volc$adj.P.Val <= 0.05])), colour = "grey", linetype = "longdash") +
+  ggplot2::geom_vline(xintercept = c(-1*1.2, 1.2), colour = "grey",linetype = "longdash")
+
+volc6 <- volc_DE_1
+print("values are NT - trt")
+volc6
+
+
+# 
+# print("side by side")
+# print("values are 30min on left")
+# cowplot::plot_grid(volc30, volc6)
+
+
 ```
 
 
 
+
+
+# Xtrail
+```{r xtrail}
+if (F){
+  require(xtail)
+
+get_counts <- function(mn_fld, ext = "_HTSeq.gene.counts.tsv"){
+  
+  files_in <- list.files(mn_fld, paste0("*", ext),
+                         full.names = T, recursive = T)
+  
+  genes <- read_tsv(files_in[1], col_names = F, show_col_types = F, col_select = "X1")
+  
+  counts <- files_in %>%
+    map(read_tsv, col_names = F, show_col_types = F, col_select = "X2") %>%
+    purrr::reduce(cbind)
+  
+  colnames(counts) <- gsub(ext, "", basename(files_in))
+  counts <- cbind(genes, counts)
+  
+  counts <- counts %>% 
+    dplyr::slice(1:(nrow(genes)-5))
+  
+  counts %>%
+    dplyr::select(-1) %>% 
+    mutate(n = 1:nrow(counts)) %>%
+    pivot_longer(!n, names_to = "Gene", values_to = "count") %>%
+    plot_ly(x = ~n, y = ~count, type = 'scatter', mode = 'lines', color = ~Gene)
+  
+  
+  # filter those without any counts but do it after selecting groups etc
+  counts <- counts[rowSums(counts[-c(1)], na.rm = T) >= 10, ]
+  
+  gen_names <- counts$X1
+  rownames(counts) <- gen_names
+  
+  counts <- counts %>%
+    dplyr::select(-c(1))
+  return(counts)
+}
+
+
+gtf_file <- "/Users/SemiQuant/Bioinformatics/Projects/riri/references/NC_000962.gff"
+txdb <- GenomicFeatures::makeTxDbFromGFF(file = gtf_file)
+feat <- genFeatures(txdb, featuretype = c("promoter", "cds", "intergenic"), reduce_ranges = TRUE,
+                    upstream = 50, downstream = 100, verbose = TRUE)
+feat <- data.frame(feat$cds_red)
+
+feat <- data.frame(GeneID = feat$feature_by,
+                   Chr = feat$seqnames,
+                   Start = feat$start,
+                   End = feat$end,
+                   Strand = feat$strand,
+                   Length = feat$width)
+
+cnts <- list(RPFs = get_counts("/Users/SemiQuant/Bioinformatics/Projects/riri/analysis/ribSeq/", "_HTSeq.gene.counts.tsv"),
+             mRNA = get_counts("/Users/SemiQuant/Bioinformatics/Projects/riri/analysis/rnaSeq", ".NC_000962.HTSeq.counts"),
+             annotation = feat)
+
+
+table(rownames(cnts$mRNA)%in%cnts$annotation$GeneID)
+cnts$annotation <- cnts$annotation[cnts$annotation$GeneID%in% rownames(cnts$RPFs)& cnts$annotation$GeneID %in% rownames(cnts$mRNA),]
+
+
+cnts$RPFs <- cnts$RPFs[match(cnts$annotation$GeneID, rownames(cnts$RPFs)), ]
+cnts$RPFs[is.na(cnts$RPFs)] <- 0
+table(cnts$annotation$GeneID==rownames(cnts$RPFs))
+rownames(cnts$RPFs) <- cnts$annotation$GeneID
+
+cnts$mRNA <- cnts$mRNA[match(cnts$annotation$GeneID, rownames(cnts$mRNA)), ]
+cnts$mRNA[is.na(cnts$mRNA)] <- 0
+table(cnts$annotation$GeneID==rownames(cnts$mRNA))
+rownames(cnts$mRNA) <- cnts$annotation$GeneID
+
+
+cbind(colnames(cnts$RPFs), colnames(cnts$mRNA))
+
+
+
+
+
+cnts_3 <- cnts
+cnts_3$RPFs <- cnts_3$RPFs[c(1,2,3,4)]
+cnts_3$mRNA <- cnts_3$mRNA[c(1,2,3,4)]
+
+cnts_6 <- cnts
+cnts_6$RPFs <- cnts_6$RPFs[c(1,2,5,6)]
+cnts_6$mRNA <- cnts_6$mRNA[c(1,2,5,6)]
+
+
+cnts_3_test.results <- xtail(cnts_3$mRNA, cnts_3$RPFs, c("NT", "NT", "3", "3"))
+cnts_6_test.results <- xtail(cnts_6$mRNA, cnts_6$RPFs, c("NT", "NT", "6", "6"))
+}else{
+  load("analysis/xtrail.Rdata")
+}
+
+
+
+
+
+
+cnts_3_test.results
+plotFCs(cnts_3_test.results)
+# plotRs(cnts_3_test.results)
+#not ploting, fix later
+
+resultsTable(cnts_3_test.results) %>% 
+  data.frame() %>% 
+  datatable(caption = "Difference between No treatment and 30 Kasugamycin",
+            extensions = 'Buttons',
+            options = list(
+              paging = TRUE,
+              searching = TRUE,
+              fixedColumns = TRUE,
+              autoWidth = TRUE,
+              ordering = TRUE,
+              dom = 'tBp',
+              buttons = c('copy', 'csv', 'excel')
+            ))
+
+
+# volcanoPlot(cnts_3_test.results)
+volc <- resultsTable(cnts_3_test.results) %>% 
+  data.frame()
+volc$EffectSize <- volc$log2FC_TE_final
+volc$threshold <- as.factor(volc$pvalue.adjust <= 0.05 & abs(volc$EffectSize) >= 1.2)
+effect_sizeThresh_2 <- abs(volc[volc$pvalue.adjust <= 0.05,]$EffectSize)
+effect_sizeThresh_2 <- effect_sizeThresh_2[order(abs(effect_sizeThresh_2), decreasing = T)][20]
+volc$ID <- rownames(volc)
+volc$lab <- ifelse(volc$pvalue.adjust <= 0.05 & abs(volc$EffectSize) >= effect_sizeThresh_2, as.character(volc$ID), "")
+
+
+ggplot2::ggplot(data = volc,
+                             ggplot2::aes(x = EffectSize, y = -log10(pvalue_final),
+                                          colour = threshold, text = ID)) +
+  ggplot2::geom_point(alpha = 0.4, size = 1.75) +
+  ggplot2::xlab("Effect Size") + ggplot2::ylab("-log10 p-value") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.position = "none") +
+  ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                 panel.grid.minor = ggplot2::element_blank()) +
+  ggplot2::geom_text(ggplot2::aes(label = volc$lab),
+                     hjust = 0, vjust = 0, colour = "dark grey", size = 2, nudge_x = 0.2) + 
+  ggplot2::geom_hline(yintercept = -log10(max(volc$pvalue_final[volc$pvalue.adjust <= 0.05])), colour = "grey", linetype = "longdash") +
+  ggplot2::geom_vline(xintercept = c(-1*1.2, 1.2), colour = "grey",linetype = "longdash")
+
+
+
+
+print("6H")
+
+
+cnts_6_test.results
+plotFCs(cnts_6_test.results)
+# plotRs(cnts_6_test.results)
+#not ploting, fix later
+
+resultsTable(cnts_6_test.results) %>% 
+  data.frame() %>% 
+  datatable(caption = "Difference between No treatment and 30 Kasugamycin",
+            extensions = 'Buttons',
+            options = list(
+              paging = TRUE,
+              searching = TRUE,
+              fixedColumns = TRUE,
+              autoWidth = TRUE,
+              ordering = TRUE,
+              dom = 'tBp',
+              buttons = c('copy', 'csv', 'excel')
+            ))
+
+
+# volcanoPlot(cnts_6_test.results)
+volc <- resultsTable(cnts_6_test.results) %>% 
+  data.frame()
+volc$EffectSize <- volc$log2FC_TE_final
+volc$threshold <- as.factor(volc$pvalue.adjust <= 0.05 & abs(volc$EffectSize) >= 1.2)
+effect_sizeThresh_2 <- abs(volc[volc$pvalue.adjust <= 0.05,]$EffectSize)
+effect_sizeThresh_2 <- effect_sizeThresh_2[order(abs(effect_sizeThresh_2), decreasing = T)][20]
+volc$ID <- rownames(volc)
+volc$lab <- ifelse(volc$pvalue.adjust <= 0.05 & abs(volc$EffectSize) >= effect_sizeThresh_2, as.character(volc$ID), "")
+
+
+ggplot2::ggplot(data = volc,
+                ggplot2::aes(x = EffectSize, y = -log10(pvalue_final),
+                             colour = threshold, text = ID)) +
+  ggplot2::geom_point(alpha = 0.4, size = 1.75) +
+  ggplot2::xlab("Effect Size") + ggplot2::ylab("-log10 p-value") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.position = "none") +
+  ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                 panel.grid.minor = ggplot2::element_blank()) +
+  ggplot2::geom_text(ggplot2::aes(label = volc$lab),
+                     hjust = 0, vjust = 0, colour = "dark grey", size = 2, nudge_x = 0.2) + 
+  ggplot2::geom_hline(yintercept = -log10(max(volc$pvalue_final[volc$pvalue.adjust <= 0.05])), colour = "grey", linetype = "longdash") +
+  ggplot2::geom_vline(xintercept = c(-1*1.2, 1.2), colour = "grey",linetype = "longdash")
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
 
 
 
