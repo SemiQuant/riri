@@ -13,20 +13,18 @@ I have written little to no error handling, so check logs etc.
 There is also something strange happenign with the prealignemnts to the stable RNAs and many are getting through, so I masked these in the reference just incase.
 
 If files dont execute then do this
-chmod +x RNAseeker_pipe.sh riboSee_pipe.sh gtf_primer.py singularity_continer_setup.sh
-
+`chmod +x RNAseeker_pipe.sh riboSee_pipe.sh gtf_primer.py singularity_continer_setup.sh`
 
 
 # TODO
--Fix error with qualimap? (Error while calculating counts! Failed to detect annotations file format.)
-
+-Fix error with qualimap? (Error while calculating counts! Failed to detect annotations file format.
 
 
 ## Download scripts
-git clone --recursive https://github.com/SemiQuant/riri.git
+`git clone --recursive https://github.com/SemiQuant/riri.git`
 
 ## Download singularity container
-./RNAseeker_pipe.sh --container
+`./RNAseeker_pipe.sh --container`
 
 
 ## RiboSee
@@ -51,6 +49,47 @@ git clone --recursive https://github.com/SemiQuant/riri.git
 | -tm|--trim\_fasta | Path to adapter and linkers multi fasta, uses Trimmomatic | ${Script\_dir}/references/adapts.fasta |
 | -ca|--cut\adapt | Adapter sequence to cut (e.g., CTGTAGGCACCATCAAT); Overwrites trim_fasta and uses CutAdapter | NA |
 | -ms|--mask | mask stable RNAs in reference instead of prealigning to them? | NA |
+| -u|--umi | UMI sequence if present #GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA | NA |
+| -p|--prime | (defult = 3) plastid three or 5 prime | NA |
+| -os|--offset | plastid offset (defult = 14) | NA |
+| -d|--downstream | plastid downstream (defult = 100) | NA |
+| -l|--landmark | plastid landmark (defult = cds_start) | NA |
+| -c|--codon_buffer | plastid codon_buffer (defult = 5) | NA |
+| -no|--normalize_over | plastid normalize_over (defult = '30 200') | NA |
+| -m|--min_counts | plastid normalize_over (defult = 20) | NA |
+| -pi|--plastid_input_extras | A tsv file where each column is a list of genes of intrest, with the first entry the name of the list | NA |
+
+
+### Example run
+also see "wynton_slurm_wrapper.sge"
+
+```
+out_dir="/wynton/home/ribSeq"
+container="/wynton/home/riri_v0.1.sif"
+script_dir="/wynton/home/riri"
+read_dir="/wynton/home/fastq"
+nm="file_name"
+
+mkdir -p "$out_dir"
+cd "$out_dir"
+
+singularity exec "$container" \
+  "${script_dir}/riboSee_pipe.sh" \
+  --threads 8 \
+  --genome_reference "${script_dir}/references/NC_000962_rRNAsMasked.fasta" \
+  --GTF_reference "${script_dir}/references/NC_000962.gff" \
+  --reads "${read_dir}/${nm}_L2_1.fq.gz" \
+  --out_dir "$out_dir" \
+  --name "$nm" \
+  --strand "reverse" \
+  --script_directory "${script_dir}" \
+  --fastQC \
+  --max_missmatch 2 \
+  --min_len 24 \
+  --max_len 36 \
+  --trim_fasta "${script_dir}/references/adapts.fasta"
+```
+
 
 ## RNAseeker
 
@@ -72,3 +111,35 @@ git clone --recursive https://github.com/SemiQuant/riri.git
 | -tr|--trim\_metrics | trim reads? | NA |
 | -a|--adapters | Path to adapter and linkers multi fasta | ${Script\_dir}/references/adapts.fasta |
 | -fq|--fastQC | Perform fastQC anlsysis | NA |
+
+
+### Example run
+also see "wynton_slurm_wrapper.sge"
+
+```
+out_dir="/wynton/home/RNAseq"
+container="/wynton/home/riri_v0.1.sif"
+script_dir="/wynton/home/riri"
+read_dir="/wynton/home/fastq"
+nm="file_name"
+
+mkdir -p "$out_dir"
+cd "$out_dir"
+
+singularity exec "$container" \
+  "${script_dir}/RNAseeker_pipe.sh" \
+    --ref "${script_dir}/references/NC_000962.fasta" \
+    --threads 8 \
+    --gtf "${script_dir}/references/NC_000962.gff" \
+    --read1 "${read_dir}/${nm}_L2_1.fq.gz" \
+    --read2 "${read_dir}/${nm}_L2_2.fq.gz" \
+    --name ${nm} \
+    --out_dir "$out_dir" \
+    --adapters "${script_dir}/references/adapts.fasta" \
+    --strand "reverse" \
+    --trim \
+    --remove_rRNA \
+    --fastQC \
+    --keep_unpaired \
+    --script_directory "${script_dir}"
+```

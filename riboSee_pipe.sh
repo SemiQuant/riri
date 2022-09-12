@@ -1,14 +1,4 @@
-
-TODO
-table of metagenes to do, each colum a new list of genes
-make the needed files, and report the number of nege found and not found in the original file
-
-
-
-
-
-
-  #!/bin/bash
+#!/bin/bash
   usage () {
     echo "
     This pipeline is soley for bacterial riboSeq (it doesnt account for introns or alt. splicing, otherwise use hisat or star aligners).
@@ -36,7 +26,7 @@ make the needed files, and report the number of nege found and not found in the 
     -mn|--min_len (defult = 24)
     -mx|--max_len (defult = 36)
     -ms|--mask = mask stable RNAs in reference instead of prealigning?
-    -u|--umi = UMI sequence if present #GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA
+    -u||--umi = UMI sequence if present #GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA
 
 
     -p|--prime (defult = 3) plastid three or 5 prime
@@ -523,7 +513,7 @@ make the needed files, and report the number of nege found and not found in the 
 
   ##############        
 
-
+# metagene list to analysis
 if [ ! -z "$gtf_ps" ]
 then
     mkdir "${out_dir}/rois"
@@ -532,7 +522,11 @@ then
     do
         nm="$(head -n1 $gtf_ps)"
         awk ‘{print $ColNum}’ "$gtf_ps" > "${out_dir}/rois/${nm}_plastid_roi.txt"
+        echo "genes in list (+1): "
+        wc -l "${out_dir}/rois/${nm}_plastid_roi.txt"
         grep -f "${nm}_plastid_roi.txt" > "${out_dir}/rois/${nm}_plastid_roi.gff"
+        echo "genes found in annotation: "
+        wc -l "${out_dir}/rois/${nm}_plastid_roi.gff"
         rm "${out_dir}/rois/${nm}_plastid_roi.txt"
         
         metagene generate "${out_dir}/rois/${nm}_plastid_roi" \
@@ -561,9 +555,6 @@ fi
 
   # sort GTF file 
   # cat my_file.gtf | grep -v "#" | sort -k1,1 -k4,4n >my_file_sorted.gtf
-
-
-
 
 
 
