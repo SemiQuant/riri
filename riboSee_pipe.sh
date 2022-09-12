@@ -219,6 +219,8 @@
   ref="${ref:-ref_tmp}"
   gtf_tmp="${Script_dir}/references/NC_000962.gff"
   gtf="${gtf:-gtf_tmp}"
+  plastid_prime="${plastid_prime:-3}"
+
 
   if [[ $plastid_prime == "5" ]]
   then
