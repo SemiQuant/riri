@@ -551,6 +551,14 @@ then
         metagene chart "${out_dir}/rois/${nm}_plastid_roi_counts_peak.png" \
           "${out_dir}/rois/${nm}_plastid_roi_count_metagene_profile.txt" \
           --landmark "highest ribosome peak"
+
+        phase_by_size "${ref/.f*/_rois.txt}" "${nme}_phase_by_size" \
+          --count_files "$bam" \
+          "$plastid_prime" \
+          --offset $offset \
+          --codon_buffer "$codon_buffer" \
+          --min_length $min_len \
+          --max_length $max_len
         
     done
 fi
