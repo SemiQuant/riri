@@ -552,7 +552,8 @@ then
           "${out_dir}/rois/${nm}_plastid_roi_count_metagene_profile.txt" \
           --landmark "highest ribosome peak"
 
-        phase_by_size "${ref/.f*/_rois.txt}" "${nme}_phase_by_size" \
+        phase_by_size "${out_dir}/rois/${nm}_plastid_roi.txt" \
+          "${out_dir}/rois/${nm}_phase_by_size" \
           --count_files "$bam" \
           "$plastid_prime" \
           --offset $offset \
