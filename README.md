@@ -26,7 +26,6 @@ If files dont execute then do this
 ## Download singularity container
 `./RNAseeker_pipe.sh --container`
 
-
 ## RiboSee
 
 | Flag | Description | Defaults |
@@ -143,3 +142,8 @@ singularity exec "$container" \
     --keep_unpaired \
     --script_directory "${script_dir}"
 ```
+
+
+## Random
+if you want to list the files in a folder to paste into the array, you can use this
+`for i in $(ls *_L2_1.fq.gz); do echo -n '"'${i}'" '; done`

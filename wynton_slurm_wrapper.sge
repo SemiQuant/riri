@@ -5,10 +5,10 @@
 #$ -pe smp 8
 #$ -N riri_array_test
 
-declare -a samples=("blank" "NC_1_10_CKDL220001075-1A_HH5FFCCX2_L2_1.fq.gz" "R30min_1_12_CKDL220001077-1A_HH5FFCCX2_L2_1.fq.gz" "R6h_1_10_CKDL220001079-1A_HH5FFCCX2_L2_1.fq.gz" "NC_2_10_CKDL220001076-1A_HH5FFCCX2_L2_1.fq.gz" "R30min_2_10_CKDL220001078-1A_HH5FFCCX2_L2_1.fq.gz" "R6h_2_10_CKDL220001080-1a_HH5FFCCX2_L2_1.fq.gz")
-nm=${samples[$SGE_TASK_ID]}
-nm=${nm/_L2_1.fq.gz/}
-echo "Processing $nm"
+# declare -a samples=("blank" "NC_1_10_CKDL220001075-1A_HH5FFCCX2_L2_1.fq.gz" "R30min_1_12_CKDL220001077-1A_HH5FFCCX2_L2_1.fq.gz" "R6h_1_10_CKDL220001079-1A_HH5FFCCX2_L2_1.fq.gz" "NC_2_10_CKDL220001076-1A_HH5FFCCX2_L2_1.fq.gz" "R30min_2_10_CKDL220001078-1A_HH5FFCCX2_L2_1.fq.gz" "R6h_2_10_CKDL220001080-1a_HH5FFCCX2_L2_1.fq.gz")
+# nm=${samples[$SGE_TASK_ID]}
+# nm=${nm/_L2_1.fq.gz/}
+# echo "Processing $nm"
 
 
 while read nm
