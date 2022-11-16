@@ -26,7 +26,7 @@
     -mn|--min_len (defult = 24)
     -mx|--max_len (defult = 36)
     -ms|--mask = mask stable RNAs in reference instead of prealigning?
-    -u||--umi = UMI sequence if present #GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA
+    -u||--umi = UMI sequence if present e.g., GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA
 
 
     -p|--prime (defult = 3) plastid three or 5 prime

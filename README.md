@@ -1,7 +1,7 @@
 # riri
 
 ## Pipelines to process bacterial PE RNAseq and SE RiboSeq
-RiboSee is used to align singe end Ribosomal profiling reads (RiboSeq) to a reference, and output alignments, counts, psite determination, etc.
+RiboSee is used to align singe end Ribosomal profiling reads (RiboSeq) to a reference (can also handel UMI tagged sequecing), and output alignments, counts, psite determination, etc.
 RNAseeker is used to align pair-end sequencing to a reference, and output alignments, counts and statistics.
 
 Secondary scripts can be used for analyses.
@@ -48,7 +48,7 @@ If files dont execute then do this
 | -tm|--trim\_fasta | Path to adapter and linkers multi fasta, uses Trimmomatic | ${Script\_dir}/references/adapts.fasta |
 | -ca|--cut\adapt | Adapter sequence to cut (e.g., CTGTAGGCACCATCAAT); Overwrites trim_fasta and uses CutAdapter | NA |
 | -ms|--mask | mask stable RNAs in reference instead of prealigning to them? | NA |
-| -u|--umi | UMI sequence if present #GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA | NA |
+| -u|--umi | UMI sequence if present e.g., GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA | NA |
 | -p|--prime | (defult = 3) plastid three or 5 prime | NA |
 | -os|--offset | plastid offset (defult = 14) | NA |
 | -d|--downstream | plastid downstream (defult = 100) | NA |
@@ -57,7 +57,6 @@ If files dont execute then do this
 | -no|--normalize_over | plastid normalize_over (defult = '30 200') | NA |
 | -m|--min_counts | plastid normalize_over (defult = 20) | NA |
 | -pi|--plastid_input_extras | A tsv file where each column is a list of genes of intrest, with the first entry the name of the list | NA |
-
 
 ### Example run
 also see "wynton_slurm_wrapper.sge"
