@@ -1,7 +1,7 @@
 #!/bin/bash
   usage () {
     echo "
-    This pipeline is soley for bacterial riboSeq (it doesnt account for introns or alt. splicing, otherwise use hisat or star aligners).
+    This pipeline is solely for bacterial riboSeq (it doesn't account for introns or alt. splicing, otherwise use hisat or star aligners).
     Assumes single end reads (or one paired read).
     Sequences are first aligned to rRNAs and tRNAs annotated in the GTF, and then the unaligned reads are aligned to the reference genome.
     
@@ -27,8 +27,6 @@
     -mx|--max_len (defult = 36)
     -ms|--mask = mask stable RNAs in reference instead of prealigning?
     -u||--umi = UMI sequence if present e.g., GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA
-
-
     -p|--prime (defult = 3) plastid three or 5 prime
     -os|--offset plastid offset (defult = 14)
     -d|--downstream plastid downstream (defult = 100)
@@ -37,7 +35,7 @@
     -no|--normalize_over plastid normalize_over (defult = '30 200')
     -m|--min_counts plastid normalize_over (defult = 20)
     
-    -pi|--plastid_input_extras A tsv file where each column is a list of genes of intrest, with the first entry the name of the list
+    -pi|--plastid_input_extras A tsv file where each column is a list of genes of interest, with the first entry the name of the list
     "
   }
 
@@ -352,7 +350,7 @@
 
       umi_tools extract --stdin="$reads" \
         --extract-method=regex \
-        --bc-pattern='.*(?P<umi_1>.{9})(?P<discard_1>TCGGAAGAGCACACGTCTGAACTCCAGTC){s<=2}.*' \
+        --bc-pattern='.*(?P<umi_1>.{9})(?P<discard_1>AGATCGGAAGAGCACACGTCTGAACTCCAGTC){s<=2}.*' \
         --log="${nme}_processed.log" \
         --stdout "${nme}_UMI.fastq.gz"
 
