@@ -225,9 +225,9 @@
 
   if [[ $plastid_prime == "5" ]]
   then
-      plastid_prime = '--fiveprime '
+      plastid_prime='--fiveprime '
   else
-      plastid_prime = '--threeprime '
+      plastid_prime='--threeprime '
   fi
 
   offset="${offset:-14}"
@@ -380,12 +380,11 @@
 
   # count alignments
   echo "HtSeq started"
-  htseq-count --nprocesses $threads --type "gene" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
+  htseq-count --nprocesses $threads --type "mRNA" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
     --minaqual 10 --nonunique none -f bam "$bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.gene.counts.tsv"
 
-
-  htseq-count --nprocesses $threads --type "CDS" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
-    --minaqual 10 --nonunique none -f bam "$bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.CDS.counts.tsv"
+  # htseq-count --nprocesses $threads --type "CDS" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
+    # --minaqual 10 --nonunique none -f bam "$bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.CDS.counts.tsv"
 
 
 
@@ -399,9 +398,11 @@
       stran_fc=0
   fi
 
-  featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "gene" -g "Name" -O -Q 5 \
+  featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "mRNA" -g "Name" -O -Q 5 \
     --ignoreDup -T $threads -a "$gtf" "$fCount" -o "${out_dir}/${nme}_featCount.counts" "$bam"
 
+  featureCounts -p -t "rRNA" -g "Name" -F "GTF" -d 30 -a "$gff" -s "$stran_fc" -T $threads \
+    -o "${out_dir}/${nme}_featCount.rRNA.counts" "$bam"
 
   # 5′ mapped sites of RPFs
   # Not working
@@ -564,6 +565,8 @@ then
         
     done
 fi
+
+rm "$reads"
 
   # sort GTF file 
   # cat my_file.gtf | grep -v "#" | sort -k1,1 -k4,4n >my_file_sorted.gtf
