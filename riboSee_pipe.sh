@@ -125,6 +125,9 @@
   -pi|--plastid_input_extras)
   plastid_in="$2"
   ;;
+  -to|--trimmo_path)
+  trimmo="$2"
+  ;;
   esac
   shift
   done
@@ -181,7 +184,7 @@
   ## Setup variables ##
   declare_globals "$@"
 
-  TRIM=/usr/bin/Trimmomatic-0.39/trimmomatic-0.39.jar
+  TRIM="${trimmo:-/usr/bin/Trimmomatic-0.39/trimmomatic-0.39.jar}"
 
   if [[ ! -z $container ]]
   then

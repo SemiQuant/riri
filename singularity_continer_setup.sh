@@ -15,29 +15,29 @@ chmod 757 /usr/local/bin/fastqc
 cd
 
 
-wget -O samtools.tar.bz2 https://iweb.dl.sourceforge.net/project/samtools/samtools/1.14/samtools-1.14.tar.bz2
+wget -O samtools.tar.bz2 https://github.com/samtools/samtools/releases/download/1.14/samtools-1.14.tar.bz2
 tar xjf samtools.tar.bz2
 cd samtools-1.*
 ./configure
 make
 make install
-cd 
+cd ..
 
-wget -O bcftools.tar.bz2 https://iweb.dl.sourceforge.net/project/samtools/samtools/1.14/bcftools-1.14.tar.bz2
+wget -O bcftools.tar.bz2 https://github.com/samtools/bcftools/releases/download/1.14/bcftools-1.14.tar.bz2
 tar xjf bcftools.tar.bz2
 cd bcftools-1.*
 ./configure
 make
 make install
-cd 
+cd ..
 
-wget -O htslib.tar.bz2 https://iweb.dl.sourceforge.net/project/samtools/samtools/1.14/htslib-1.14.tar.bz2
+wget -O htslib.tar.bz2 https://github.com/samtools/htslib/releases/download/1.14/htslib-1.14.tar.bz2
 tar xjf htslib.tar.bz2
 cd htslib-1.*
 ./configure
 make
 make install
-cd 
+cd ..
 
 wget https://github.com/usadellab/Trimmomatic/files/5854859/Trimmomatic-0.39.zip
 unzip Trimmomatic-0.39.zip
@@ -55,7 +55,9 @@ apt-get -y install python3-pip
 
 pip install multiqc
 pip install numpy pysam cython
-pip install plastid
+# pip install plastid
+pip install --force-reinstall --install-option='--recythonize' plastid
+
 
 wget -O bedtools https://github.com/arq5x/bedtools2/releases/download/v2.30.0/bedtools.static.binary
 chmod +x bedtools
@@ -67,7 +69,7 @@ rm bowtie.zip
 mv ./bowtie-1.3.1-linux-x86_64/* /usr/bin/
 
 
-wget -O bowtie2.zip https://iweb.dl.sourceforge.net/project/bowtie-bio/bowtie2/2.4.5/bowtie2-2.4.5-linux-x86_64.zip
+wget -O bowtie2.zip https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.4.5/bowtie2-2.4.5-linux-x86_64.zip/download
 unzip bowtie2.zip
 rm bowtie2.zip
 mv ./bowtie2-2.4.5-linux-x86_64/* /usr/bin/
@@ -91,9 +93,9 @@ chmod 757 /usr/bin/
 git clone https://github.com/gpertea/gffread
 cd gffread
 make release
-ln -s ${PWD}/gffread/gffread /usr/bin/gffread
+mv gffread /usr/bin/
 chmod 757 /usr/bin/gffread
-cp ${PWD}/gffread/gffread /usr/local/bin/gffread
+ln -s ${PWD}/gffread/gffread /usr/bin/gffread
 
 pip install HTSeq
 
