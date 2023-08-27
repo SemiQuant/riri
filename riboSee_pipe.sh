@@ -225,9 +225,9 @@
 
   if [[ $plastid_prime == "5" ]]
   then
-      plastid_prime='--fiveprime '
+      plastid_prime='--fiveprime'
   else
-      plastid_prime='--threeprime '
+      plastid_prime='--threeprime'
   fi
 
   offset="${offset:-14}"
@@ -401,8 +401,8 @@
   featureCounts -F "GTF" -d $min_len -s "$stran_fc" -t "mRNA" -g "Name" -O -Q 5 \
     --ignoreDup -T $threads -a "$gtf" "$fCount" -o "${out_dir}/${nme}_featCount.counts" "$bam"
 
-  featureCounts -t "rRNA" -g "Name" -F "GTF" -d $min_len -a "$gff" -s "$stran_fc" -T $threads \
-    -o "${out_dir}/${nme}_featCount.rRNA.counts" "$bam"
+  featureCounts -F "GTF" -d $min_len -s "$stran_fc" -t "mRNA" -g "rRNA" -O -Q 5 \
+    --ignoreDup -T $threads -a "$gtf" "$fCount" -o "${out_dir}/${nme}_featCount.rRNA.counts" "$bam"
 
   # 5′ mapped sites of RPFs
   # Not working
@@ -441,6 +441,7 @@
   # metagene generate NC_000962 \
   #     --landmark cds_start \
   #     --annotation_files NC_000962.gtf
+
   phase_by_size "${ref/.f*/_rois.txt}" "${nme}_phase_by_size" \
     --count_files "$bam" \
     "$plastid_prime" \
@@ -493,13 +494,11 @@
   # plt.show()
   # # plt.savefig( "test.png")
   # '''
-  read norm1 norm2 <<< "$normalize_over"
-
   metagene count "${ref/.f*/_rois.txt}" "${nme}_count" \
     --count_files "$bam" \
     --offset $offset \
     "$plastid_prime" \
-    --normalize_over "$norm1" "$norm2" \
+    --normalize_over $normalize_over \
     --min_counts "$min_counts" \
     --cmap Blues
 
@@ -543,7 +542,7 @@ then
           --count_files "$bam" \
           --offset $offset \
           "$plastid_prime" \
-          --normalize_over "$normalize_over" \
+          --normalize_over $normalize_over \
           --min_counts "$min_counts" \
           --cmap Blues
       
