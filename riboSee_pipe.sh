@@ -32,7 +32,7 @@
     -d|--downstream plastid downstream (default = 100)
     -l|--landmark plastid landmark (default = cds_start)
     -c|--codon_buffer plastid codon_buffer (default = 5)
-    -no|--normalize_over plastid normalize_over (default = '30 200')
+    -no|--normalize_over plastid normalize_over (default = 30 200)
     -m|--min_counts plastid normalize_over (default = 20)
     
     -pi|--plastid_input_extras A tsv file where each column is a list of genes of interest, with the first entry the name of the list
@@ -235,7 +235,7 @@
   landmark="${landmark:-cds_start}"
 
   codon_buffer="${codon_buffer:-5}"
-  normalize_over="${normalize_over:-'30 200'}"
+  normalize_over="${normalize_over:-30 200}"
   min_counts="${min_counts:-20}"
 
   # Check if programs installed
