@@ -22,18 +22,18 @@
     -sd|--script_directory
     -fq|--fastQC = run fastqc?
     -tm|--trim_fasta = path to multifasta with adapters, linkers etc to trim
-    -mm|--max_missmatch (defult = 2)
-    -mn|--min_len (defult = 24)
-    -mx|--max_len (defult = 36)
+    -mm|--max_missmatch (default = 2)
+    -mn|--min_len (default = 24)
+    -mx|--max_len (default = 36)
     -ms|--mask = mask stable RNAs in reference instead of prealigning?
     -u||--umi = UMI sequence if present e.g., GNNNNNNNNGACTGGAGTTCAGACGTGTGCTCTTCCGA
-    -p|--prime (defult = 3) plastid three or 5 prime
-    -os|--offset plastid offset (defult = 14)
-    -d|--downstream plastid downstream (defult = 100)
-    -l|--landmark plastid landmark (defult = cds_start)
-    -c|--codon_buffer plastid codon_buffer (defult = 5)
-    -no|--normalize_over plastid normalize_over (defult = '30 200')
-    -m|--min_counts plastid normalize_over (defult = 20)
+    -p|--prime (default = 3) plastid three or 5 prime
+    -os|--offset plastid offset (default = 14)
+    -d|--downstream plastid downstream (default = 100)
+    -l|--landmark plastid landmark (default = cds_start)
+    -c|--codon_buffer plastid codon_buffer (default = 5)
+    -no|--normalize_over plastid normalize_over (default = '30 200')
+    -m|--min_counts plastid normalize_over (default = 20)
     
     -pi|--plastid_input_extras A tsv file where each column is a list of genes of interest, with the first entry the name of the list
     "
@@ -398,10 +398,10 @@
       stran_fc=0
   fi
 
-  featureCounts -F "GTF" -d 30 -s "$stran_fc" -t "mRNA" -g "Name" -O -Q 5 \
+  featureCounts -F "GTF" -d $min_len -s "$stran_fc" -t "mRNA" -g "Name" -O -Q 5 \
     --ignoreDup -T $threads -a "$gtf" "$fCount" -o "${out_dir}/${nme}_featCount.counts" "$bam"
 
-  featureCounts -p -t "rRNA" -g "Name" -F "GTF" -d 30 -a "$gff" -s "$stran_fc" -T $threads \
+  featureCounts -t "rRNA" -g "Name" -F "GTF" -d $min_len -a "$gff" -s "$stran_fc" -T $threads \
     -o "${out_dir}/${nme}_featCount.rRNA.counts" "$bam"
 
   # 5′ mapped sites of RPFs
@@ -493,12 +493,13 @@
   # plt.show()
   # # plt.savefig( "test.png")
   # '''
+  read norm1 norm2 <<< "$normalize_over"
 
   metagene count "${ref/.f*/_rois.txt}" "${nme}_count" \
     --count_files "$bam" \
     --offset $offset \
     "$plastid_prime" \
-    --normalize_over "$normalize_over" \
+    --normalize_over "$norm1" "$norm2" \
     --min_counts "$min_counts" \
     --cmap Blues
 
