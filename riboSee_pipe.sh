@@ -216,12 +216,12 @@
 
   trim_tmp="${Script_dir}/references/adapts.fasta"
   trim_fasta="${trim_fasta:-trim_tmp}"
-  ref_tmp="${Script_dir}/references/NC_000962.fasta"
+  ref_tmp="${Script_dir}/references/NC_000962_rRNAsMasked.fasta"
   ref="${ref:-ref_tmp}"
+  ref_rem="${ref/.f*/}"
   gtf_tmp="${Script_dir}/references/NC_000962.gff"
   gtf="${gtf:-gtf_tmp}"
   plastid_prime="${plastid_prime:-3}"
-
 
   if [[ $plastid_prime == "5" ]]
   then
@@ -380,12 +380,11 @@
 
   # count alignments
   echo "HtSeq started"
-  htseq-count --nprocesses $threads --type "mRNA" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
+  htseq-count --nprocesses $threads --type "CDS" --idattr "locus_tag" --order "name" --mode "union" --stranded "$strand" \
     --minaqual 10 --nonunique none -f bam "$bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.gene.counts.tsv"
 
   # htseq-count --nprocesses $threads --type "CDS" --idattr "Name" --order "name" --mode "union" --stranded "$strand" \
     # --minaqual 10 --nonunique none -f bam "$bam" "$gtf" --counts_output "${out_dir}/${nme}_HTSeq.CDS.counts.tsv"
-
 
 
   if [[ $strand == "reverse" ]]
@@ -398,11 +397,14 @@
       stran_fc=0
   fi
 
-  featureCounts -F "GTF" -d $min_len -s "$stran_fc" -t "mRNA" -g "Name" -O -Q 5 \
-    --ignoreDup -T $threads -a "$gtf" "$fCount" -o "${out_dir}/${nme}_featCount.counts" "$bam"
+  featureCounts -F "GTF" -d $min_len -s "$stran_fc" -t "CDS" -g "locus_tag" -O -Q 5 \
+    --ignoreDup -T $threads -a "$gtf" -o "${out_dir}/${nme}_featCount.counts" "$bam"
 
-  featureCounts -F "GTF" -d $min_len -s "$stran_fc" -t "mRNA" -g "rRNA" -O -Q 5 \
-    --ignoreDup -T $threads -a "$gtf" "$fCount" -o "${out_dir}/${nme}_featCount.rRNA.counts" "$bam"
+  featureCounts -F "GTF" -d $min_len -s "$stran_fc" -t "rRNA" -g "locus_tag" -O -Q 5 \
+    --ignoreDup -T $threads -a "$gtf" -o "${out_dir}/${nme}_featCount.rRNA.counts" "$bam"
+
+  # featureCounts -F "GTF" -d $min_len -s "$stran_fc" -t "mRNA" -g "rRNA" -O -Q 5 \
+    # --ignoreDup -T $threads -a "$gtf" "$fCount" -o "${out_dir}/${nme}_featCount.rRNA.counts" "$bam"
 
   # 5′ mapped sites of RPFs
   # Not working
@@ -502,11 +504,11 @@
     --min_counts "$min_counts" \
     --cmap Blues
 
-  metagene chart "${nme}_counts_strt.png" \
+  metagene chart "${nme}_counts_strt" \
     "${nme}_count_metagene_profile.txt" \
     --landmark "start codon"
 
-  metagene chart "${nme}_counts_peak.png" \
+  metagene chart "${nme}_counts_peak" \
     "${nme}_count_metagene_profile.txt" \
     --landmark "highest ribosome peak"
 
