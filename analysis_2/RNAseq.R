@@ -13,7 +13,6 @@ meta <- readxl::read_excel("metadata.xlsx")
 meta <- meta %>% 
   filter(!is.na(Group))
 
-
 mn_fld <- "/Users/semiquant/Downloads/RNAseq_pipeline_20240906_223306/"
 files_in <- list.files(paste0(mn_fld), "*featCount.counts$",
                        full.names = T, recursive = T)
@@ -73,18 +72,18 @@ vst_1_blind_cor <- cor(assay(vst_1_blind))
 
 
 
-# Heatmap of all transcripts color by groups ------------------------------------------------
-hmap_QC_1 <- heatmaply(vst_1_blind_cor,
-                       # symm = T,
-                       col_side_colors = meta$Batch,
-                       row_side_colors = meta$Timepoint_min,
-                       hclust_method = "complete",
-                       dist_method = "manhattan",
-                       fontsize_row = 5,
-                       fontsize_col = 5,
-                       # row_text_angle = 45,
-                       plot_method = "plotly"
-)
+# # Heatmap of all transcripts color by groups ------------------------------------------------
+# hmap_QC_1 <- heatmaply(vst_1_blind_cor,
+#                        # symm = T,
+#                        col_side_colors = meta$Batch,
+#                        row_side_colors = meta$Timepoint_min,
+#                        hclust_method = "complete",
+#                        dist_method = "manhattan",
+#                        fontsize_row = 5,
+#                        fontsize_col = 5,
+#                        # row_text_angle = 45,
+#                        plot_method = "plotly"
+# )
 # hmap_QC_1
 
 vst_1_blind_t <- t(assay(vst_1_blind))
@@ -272,7 +271,8 @@ dotplot(kegg_enrich_360, showCategory = 10)
 
 
 
-
+```{r RNAseq_5, message=FALSE, warning=FALSE}
+```
 
 
 
